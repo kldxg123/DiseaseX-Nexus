@@ -1,0 +1,64 @@
+{
+  "project": {
+    "name": "ebola-step-quantitative-trend",
+    "random_seed": 42,
+    "timezone": "UTC"
+  },
+  "paths": {
+    "data_raw": "data/raw",
+    "data_interim": "data/interim",
+    "data_processed": "data/processed",
+    "outputs": "data/outputs",
+    "models": "models",
+    "lora_weights": "lora_weights",
+    "logs": "logs"
+  },
+  "data": {
+    "start_date": "2014-01-01",
+    "end_date": "2026-12-31",
+    "horizons": [7, 14, 21, 30],
+    "past_window_days": 14,
+    "up_threshold": 0.2,
+    "down_threshold": -0.2,
+    "min_samples_per_class": 20
+  },
+  "sources": {
+    "cases": {
+      "local_files": ["data/ebola_africa.csv", "data/ebola_data_db_format.csv"],
+      "allow_user_upload": true,
+      "github_repo": "houzengxiang-14588/ebola-prediction"
+    },
+    "openmeteo": {
+      "enabled": true,
+      "cache_dir": "data/raw/weather/openmeteo",
+      "rate_limit_seconds": 1,
+      "timeout_seconds": 20
+    }
+  },
+  "model": {
+    "baseline": "rule_baseline",
+    "qwen_model_id": "Qwen/Qwen2.5-7B-Instruct",
+    "local_model_dir": "models/Qwen2.5-7B-Instruct",
+    "production_adapter_dir": "lora_weights/ebola_qwen25_step/production",
+    "device": "auto",
+    "use_4bit": true,
+    "max_seq_length": 4096
+  },
+  "step": {
+    "enabled": true,
+    "experience_buffer_path": "data/processed/step_experience_buffer.jsonl",
+    "model_registry_path": "data/processed/model_registry.json",
+    "cfi_threshold": 0.05,
+    "min_new_labeled_experiences_for_update": 50,
+    "replay_sample_size": 500,
+    "promote_min_macro_f1_delta": 0.0,
+    "promote_max_cfi": 0.05,
+    "allow_auto_promote": false
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "external_fetch_default": false,
+    "external_fetch_timeout_seconds": 10
+  }
+}

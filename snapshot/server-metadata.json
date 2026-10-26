@@ -1,0 +1,73 @@
+{
+  "redownloadable_base_models": [
+    {
+      "path": "server/aibola/models/Qwen2.5-7B-Instruct/model-00001-of-00004.safetensors",
+      "bytes": 3945441440,
+      "sha256": "a1333e6293854747c481288ea83b348226af178dd565c49b6f9495ba1966aba7",
+      "restore": "redownload foundation-model files using included config identifiers and verify hash"
+    },
+    {
+      "path": "server/aibola/models/Qwen2.5-7B-Instruct/model-00002-of-00004.safetensors",
+      "bytes": 3864726352,
+      "sha256": "f5d25a2772cb825164a2a2c0fb6d51a87e282abf21e4dd75bc5cfb3cd0ea6185",
+      "restore": "redownload foundation-model files using included config identifiers and verify hash"
+    },
+    {
+      "path": "server/aibola/models/Qwen2.5-7B-Instruct/model-00003-of-00004.safetensors",
+      "bytes": 3864726424,
+      "sha256": "8efdec4c1bc12317ae1a38dc42b595ce777738a64deea3fcb8a0a91381bcdfd5",
+      "restore": "redownload foundation-model files using included config identifiers and verify hash"
+    },
+    {
+      "path": "server/aibola/models/Qwen2.5-7B-Instruct/model-00004-of-00004.safetensors",
+      "bytes": 3556377672,
+      "sha256": "1a72d403cdf0c1ec3cb7f289f17b394a01e64394c2e9b3c0f94dbce3faf879bd",
+      "restore": "redownload foundation-model files using included config identifiers and verify hash"
+    },
+    {
+      "path": "server/epidemic-openclaw/models/llm/Qwen3-8B-AWQ/model-00001-of-00002.safetensors",
+      "bytes": 4853922024,
+      "sha256": "6e112429856bc65e3837a9f38d6f6b71ffdda832cb46299a12f4fa8f6352516e",
+      "restore": "redownload foundation-model files using included config identifiers and verify hash"
+    },
+    {
+      "path": "server/epidemic-openclaw/models/llm/Qwen3-8B-AWQ/model-00002-of-00002.safetensors",
+      "bytes": 1244659840,
+      "sha256": "20c2d6366ab85c90786ccdd829cd2b9e7d30ef3b2ebbb998280e7e4014b542ff",
+      "restore": "redownload foundation-model files using included config identifiers and verify hash"
+    }
+  ],
+  "changed_during_copy": [],
+  "database": {
+    "status": "exported",
+    "business_tables": 174,
+    "excluded_auth_tables": 0,
+    "bytes": 809355924,
+    "consistent_snapshot": true,
+    "source": "verified stationary physical cluster recovered only in a private disposable copy",
+    "original_files_unchanged": true,
+    "private_recovery_process_stopped": true,
+    "source_cluster_files": 2346,
+    "source_cluster_bytes": 1300224783
+  },
+  "database_recovery_official_packages": [
+    {
+      "package": "postgresql-18",
+      "version": "18.6-1.pgdg24.04+2",
+      "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-18_18.6-1.pgdg24.04+2_amd64.deb",
+      "sha256": "c0773357df8769abb70e92722196d9b53422d71c0f29a4f39c834b94276cfa3d"
+    },
+    {
+      "package": "postgresql-client-18",
+      "version": "18.6-1.pgdg24.04+2",
+      "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-client-18_18.6-1.pgdg24.04+2_amd64.deb",
+      "sha256": "b9d10d99a73bf7aa375be2fe36626c40499cfdf553d0ad174674a88a1b256b43"
+    },
+    {
+      "package": "libpq5",
+      "version": "18.6-1.pgdg24.04+2",
+      "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/libpq5_18.6-1.pgdg24.04+2_amd64.deb",
+      "sha256": "b487c5ed2ceb9244c6a9d6ae65818ed6707c3c44a2e14488394ae4194c52c53b"
+    }
+  ]
+}

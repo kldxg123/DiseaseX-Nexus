@@ -1,0 +1,72 @@
+.env
+.env.*
+!.env.example
+.secrets/
+服务器信息*.txt
+known_hosts*
+*.pem
+*.key
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+conda/
+data/raw/**
+data/processed/**
+models/**
+*.db
+*.sqlite*
+*.log
+*.tmp
+*.tar
+*.tar.gz
+*.zip
+
+
+# PostgreSQL runtime and secrets
+.secrets/
+storage/database/postgresql18/data/
+storage/database/postgresql18/run/
+storage/database/postgresql18/logs/
+storage/database/postgresql18/backups/
+.pgpass
+.pgpass*
+postmaster.pid
+*.dump
+*.backup
+
+
+# Qwen/vLLM large and runtime files
+models/llm/
+storage/cache/
+storage/tmp/
+storage/logs/qwen-vllm/
+storage/runtime/qwen-vllm/
+*.incomplete
+
+# P0-4 OpenClaw runtime
+runtime/
+storage/openclaw/
+storage/cache/node/
+storage/cache/npm/
+reports/p0_4_openclaw/*.raw
+
+# P1-1 domain storage
+storage/raw/
+storage/tmp/
+storage/cache/pip/
+storage/database/postgresql18/backups/p1_1/
+reports/p1_1_domain_storage/*.raw
+.mypy_cache/
+.ruff_cache/
+*.coverage
+
+# Generated execution reports
+reports/
+# P1-2 local Node and service runtime
+node_modules/
+storage/
+*.tgz
+# Plugin test/compiler byproducts; runtime entry dist/index.* is tracked
+integrations/openclaw/epidemic-query-tools/dist/index.test.*
+integrations/openclaw/epidemic-query-tools/dist/src/

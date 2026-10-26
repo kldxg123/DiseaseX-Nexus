@@ -1,0 +1,22 @@
+{
+  "code_files": 946,
+  "data_files": 16575,
+  "unique_blobs": 6762,
+  "asset_parts": 10,
+  "asset_bytes": 5029568719,
+  "database": {
+    "status": "exported",
+    "business_tables": 174,
+    "excluded_auth_tables": 0,
+    "bytes": 809355924,
+    "consistent_snapshot": true,
+    "source": "verified stationary physical cluster recovered only in a private disposable copy",
+    "original_files_unchanged": true,
+    "private_recovery_process_stopped": true,
+    "source_cluster_files": 2346,
+    "source_cluster_bytes": 1300224783
+  },
+  "changed_during_copy": 0,
+  "python_reference_only": 17,
+  "prepared_at": "2026-10-26T07:36:22.861767+00:00"
+}

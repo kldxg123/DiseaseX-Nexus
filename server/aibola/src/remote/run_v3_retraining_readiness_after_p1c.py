@@ -1,0 +1,20 @@
+from __future__ import annotations
+
+from src.remote.p0c1_runner import P0c1Stage, parse_args, run_stage
+
+
+def main() -> int:
+    args = parse_args("Generate v3 retraining readiness after P1c on remote.")
+    return run_stage(
+        P0c1Stage(
+            "run_v3_retraining_readiness_after_p1c",
+            "python -m src.reports.v3_retraining_readiness_after_p1c",
+            timeout=600,
+        ),
+        args.root,
+        args.dry_run,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

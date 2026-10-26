@@ -1,0 +1,6 @@
+name: epidemic-core
+dependencies:
+  - python=3.10
+  - pip
+  - setuptools
+  - wheel

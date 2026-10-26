@@ -1,0 +1,336 @@
+version: 1
+stage: P1b
+policy:
+  raw_root: data/raw/external_v3
+  report_dir: data/outputs/reports
+  max_total_download_mb: 2500
+  never_train_scopes:
+    - guinea_2021
+  locked_external_test_scopes:
+    - guinea_2021
+  cross_check_only_scopes:
+    - west_africa_2014_2016
+  min_admin_match_coverage: 0.95
+  require_semantic_case_death: true
+  require_semantic_incident_cumulative: true
+  no_external_test_threshold_tuning: true
+
+outbreak_scopes:
+  drc_2018_2020:
+    countries: [COD]
+    date_start: "2018-08-01"
+    date_end: "2020-06-30"
+    target_role: train_candidate
+    description: DRC North Kivu/Ituri and related Ebola outbreak data candidate.
+  uganda_2022:
+    countries: [UGA]
+    date_start: "2022-09-01"
+    date_end: "2023-01-31"
+    target_role: train_candidate
+    description: Uganda Sudan ebolavirus outbreak data candidate.
+  drc_later_outbreaks:
+    countries: [COD]
+    date_start: "2020-07-01"
+    date_end: "2024-12-31"
+    target_role: validation_candidate
+    description: Later DRC outbreaks for possible validation or candidate training after review.
+  uganda_later_outbreaks:
+    countries: [UGA]
+    date_start: "2023-02-01"
+    date_end: "2026-12-31"
+    target_role: validation_candidate
+    description: Later Uganda outbreak context if official tables exist.
+  guinea_2021:
+    countries: [GIN]
+    date_start: "2021-02-01"
+    date_end: "2021-06-30"
+    target_role: external_test_locked
+    description: Locked external test; never used for training or threshold tuning.
+  west_africa_2014_2016:
+    countries: [GIN, LBR, SLE]
+    date_start: "2014-01-01"
+    date_end: "2016-12-31"
+    target_role: cross_check_only
+    description: Overlaps P0a/P0d original rows; cross-check only unless a replacement review is approved.
+
+sources:
+  hdx_case_search:
+    group: case_sources
+    source_type: hdx_ckan_search
+    license: see_resource_metadata
+    max_file_mb: 120
+    allowed_roles: [train_candidate, validation_candidate, external_test_locked, cross_check_only]
+    search_terms:
+      - Ebola Democratic Republic of the Congo 2018 2020 cases health zone
+      - DRC Ebola health zone cases 2018 2020
+      - Uganda Ebola 2022 district cases
+      - Ebola Uganda 2022 situation report cases
+      - Guinea Ebola 2021 cases
+      - Ebola cases deaths West Africa Guinea Liberia Sierra Leone
+      - Ebola health zones DRC boundaries
+      - Uganda districts boundaries Ebola
+    expected_granularity: daily_or_weekly_admin
+    expected_fields: [date, country, adm1, adm2, health_zone, cases, deaths]
+    manual_semantic_review_required: false
+  who_don:
+    group: case_sources
+    source_type: html_page
+    url: https://www.who.int/emergencies/disease-outbreak-news
+    license: WHO website terms
+    max_file_mb: 30
+    allowed_roles: [cross_check_only, background_feature]
+    expected_granularity: narrative_event_timeline
+    expected_fields: [date, country, cases, deaths, event]
+    manual_semantic_review_required: true
+  who_sitreps_archive:
+    group: case_sources
+    source_type: html_page
+    url: https://www.who.int/emergencies/situations
+    license: WHO website terms
+    max_file_mb: 30
+    allowed_roles: [cross_check_only, background_feature]
+    expected_granularity: report_index
+    expected_fields: [date, country, report_url]
+    manual_semantic_review_required: true
+  cdc_ebola_outbreaks:
+    group: case_sources
+    source_type: html_page
+    url: https://www.cdc.gov/ebola/outbreaks/
+    license: CDC public website terms
+    max_file_mb: 30
+    allowed_roles: [cross_check_only, background_feature]
+    expected_granularity: outbreak_summary
+    expected_fields: [country, date, cases, deaths]
+    manual_semantic_review_required: true
+  unicef_sitreps:
+    group: case_sources
+    source_type: html_page
+    url: https://www.unicef.org/appeals/situation-reports
+    license: UNICEF website terms
+    max_file_mb: 30
+    allowed_roles: [cross_check_only, background_feature]
+    expected_granularity: report_index
+    expected_fields: [date, country, report_url]
+    manual_semantic_review_required: true
+  ecdc_threat_reports:
+    group: case_sources
+    source_type: html_page
+    url: https://www.ecdc.europa.eu/en/all-topics-z/ebola-virus-disease/threats-and-outbreaks
+    license: ECDC website terms
+    max_file_mb: 30
+    allowed_roles: [cross_check_only, background_feature]
+    expected_granularity: outbreak_summary
+    expected_fields: [date, country, cases, deaths]
+    manual_semantic_review_required: true
+  github_search:
+    group: literature_dataset_links
+    source_type: github_search
+    url: https://api.github.com/search/repositories
+    license: repository_specific
+    max_file_mb: 50
+    allowed_roles: [cross_check_only]
+    search_terms:
+      - ebola cases DRC 2018 data
+      - Uganda Ebola 2022 data csv
+      - Ebola health zone cases dataset
+    expected_granularity: dataset_link_metadata
+    expected_fields: [repository, url, license]
+    manual_semantic_review_required: true
+  pubmed_eutilities:
+    group: literature_dataset_links
+    source_type: pubmed_search
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi
+    license: metadata_only
+    max_file_mb: 5
+    allowed_roles: [cross_check_only]
+    search_terms:
+      - Ebola DRC 2018 2020 health zone data
+      - Uganda 2022 Ebola district case data
+      - Ebola outbreak dataset GitHub Zenodo
+    expected_granularity: literature_metadata
+    expected_fields: [pmid, title, doi]
+    manual_semantic_review_required: true
+  europe_pmc:
+    group: literature_dataset_links
+    source_type: europe_pmc_search
+    url: https://www.ebi.ac.uk/europepmc/webservices/rest/search
+    license: metadata_only
+    max_file_mb: 5
+    allowed_roles: [cross_check_only]
+    search_terms:
+      - Ebola DRC 2018 2020 health zone data
+      - Uganda 2022 Ebola district case data
+    expected_granularity: literature_metadata
+    expected_fields: [title, doi, data_links]
+    manual_semantic_review_required: true
+  crossref:
+    group: literature_dataset_links
+    source_type: crossref_search
+    url: https://api.crossref.org/works
+    license: metadata_only
+    max_file_mb: 5
+    allowed_roles: [cross_check_only]
+    search_terms:
+      - Ebola DRC 2018 2020 health zone data
+      - Uganda 2022 Ebola case data
+    expected_granularity: literature_metadata
+    expected_fields: [title, doi, link]
+    manual_semantic_review_required: true
+  zenodo:
+    group: literature_dataset_links
+    source_type: zenodo_search
+    url: https://zenodo.org/api/records
+    license: record_specific
+    max_file_mb: 80
+    allowed_roles: [cross_check_only, validation_candidate]
+    search_terms:
+      - Ebola DRC 2018 health zone cases
+      - Uganda Ebola 2022 data
+      - Ebola outbreak line list dataset
+    expected_granularity: dataset_metadata
+    expected_fields: [record_id, title, files]
+    manual_semantic_review_required: true
+  geoboundaries:
+    group: admin_population_weather
+    source_type: geoboundaries_api
+    url_template: https://www.geoboundaries.org/api/current/gbOpen/{iso3}/{adm}/
+    license: gbOpen
+    max_file_mb: 80
+    countries: [COD, UGA, GIN, LBR, SLE]
+    admin_levels: [ADM1, ADM2]
+    allowed_roles: [background_feature]
+    expected_granularity: admin_boundary
+    expected_fields: [shapeName, geometry]
+    manual_semantic_review_required: false
+  worldpop:
+    group: admin_population_weather
+    source_type: direct_url_template
+    url_template: https://data.worldpop.org/GIS/Population/Global_2000_2020/{year}/{iso3}/{iso2}_ppp_{year}_UNadj.tif
+    license: CC-BY-4.0
+    max_file_mb: 400
+    countries: [COD, UGA, GIN, LBR, SLE]
+    years: [2020]
+    allowed_roles: [background_feature]
+    expected_granularity: raster_population
+    expected_fields: [population_count]
+    manual_semantic_review_required: false
+  nasa_power:
+    group: admin_population_weather
+    source_type: nasa_power_daily_point
+    url: https://power.larc.nasa.gov/api/temporal/daily/point
+    license: NASA POWER terms
+    max_file_mb: 10
+    allowed_roles: [background_feature]
+    expected_granularity: daily_point_weather
+    expected_fields: [PRECTOTCORR, T2M, RH2M]
+    manual_semantic_review_required: false
+  openmeteo:
+    group: admin_population_weather
+    source_type: openmeteo_archive_point
+    url: https://archive-api.open-meteo.com/v1/archive
+    license: CC-BY-4.0
+    max_file_mb: 10
+    allowed_roles: [background_feature]
+    expected_granularity: daily_point_weather
+    expected_fields: [temperature_2m_mean, precipitation_sum, relative_humidity_2m_mean]
+    manual_semantic_review_required: false
+  geofabrik_osm:
+    group: mobility_sources
+    source_type: direct_url_template
+    url_template: https://download.geofabrik.de/africa/{geofabrik_slug}-latest.osm.pbf
+    license: ODbL-1.0
+    max_file_mb: 250
+    countries: [COD, UGA, GIN, LBR, SLE]
+    allowed_roles: [background_feature]
+    expected_granularity: road_network
+    expected_fields: [highway, geometry]
+    manual_semantic_review_required: false
+  ourairports:
+    group: mobility_sources
+    source_type: direct_url
+    url: https://ourairports.com/data/airports.csv
+    license: public_domain_or_community_terms
+    max_file_mb: 30
+    allowed_roles: [background_feature]
+    expected_granularity: airport_point
+    expected_fields: [iso_country, type, latitude_deg, longitude_deg]
+    manual_semantic_review_required: false
+  gtmd:
+    group: mobility_sources
+    source_type: metadata_only
+    url: https://github.com/global-mobility-data/gtmd
+    license: repository_specific
+    max_file_mb: 5
+    allowed_roles: [background_feature]
+    expected_granularity: mobility_metadata
+    expected_fields: [source, availability]
+    manual_semantic_review_required: true
+  opensky:
+    group: mobility_sources
+    source_type: metadata_only
+    url: https://opensky-network.org/datasets/
+    license: OpenSky terms
+    max_file_mb: 5
+    allowed_roles: [background_feature]
+    expected_granularity: flight_metadata
+    expected_fields: [airport_or_region, date, flight_count]
+    manual_semantic_review_required: true
+
+weather_points:
+  - id: drc_beni_2018_2020
+    scope: drc_2018_2020
+    country_iso3: COD
+    lat: 0.4911
+    lon: 29.4731
+    start: "2018-08-01"
+    end: "2020-06-30"
+  - id: drc_mbandaka_2018
+    scope: drc_2018_2020
+    country_iso3: COD
+    lat: 0.0478
+    lon: 18.2558
+    start: "2018-05-01"
+    end: "2018-07-31"
+  - id: uganda_mubende_2022
+    scope: uganda_2022
+    country_iso3: UGA
+    lat: 0.5585
+    lon: 31.3949
+    start: "2022-09-01"
+    end: "2023-01-31"
+  - id: uganda_kampala_2022
+    scope: uganda_2022
+    country_iso3: UGA
+    lat: 0.3476
+    lon: 32.5825
+    start: "2022-09-01"
+    end: "2023-01-31"
+  - id: guinea_nzerekore_2021
+    scope: guinea_2021
+    country_iso3: GIN
+    lat: 7.7562
+    lon: -8.8179
+    start: "2021-02-01"
+    end: "2021-06-30"
+
+country_metadata:
+  COD:
+    name: Democratic Republic of the Congo
+    iso2: cod
+    geofabrik_slug: congo-democratic-republic
+  UGA:
+    name: Uganda
+    iso2: uga
+    geofabrik_slug: uganda
+  GIN:
+    name: Guinea
+    iso2: gin
+    geofabrik_slug: guinea
+  LBR:
+    name: Liberia
+    iso2: lbr
+    geofabrik_slug: liberia
+  SLE:
+    name: Sierra Leone
+    iso2: sle
+    geofabrik_slug: sierra-leone

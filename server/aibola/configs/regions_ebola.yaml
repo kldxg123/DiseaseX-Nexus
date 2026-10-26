@@ -1,0 +1,7 @@
+{
+  "regions": [
+    {"country": "Sierra Leone", "iso3": "SLE"},
+    {"country": "Liberia", "iso3": "LBR"},
+    {"country": "Guinea", "iso3": "GIN"}
+  ]
+}

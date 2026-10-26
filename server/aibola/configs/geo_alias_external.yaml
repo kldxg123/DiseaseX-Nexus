@@ -1,0 +1,52 @@
+version: 1
+thresholds:
+  min_admin_match_coverage: 0.90
+  max_needs_review_ratio: 0.10
+  fuzzy_match_threshold: 0.82
+countries:
+  Guinea:
+    iso3: GIN
+    aliases: ["Guinea", "Guinea 2", "GIN", "Guinee", "Guinée"]
+  Liberia:
+    iso3: LBR
+    aliases: ["Liberia", "Liberia 2", "LBR"]
+  Sierra Leone:
+    iso3: SLE
+    aliases: ["Sierra Leone", "SLE"]
+  Mali:
+    iso3: MLI
+    aliases: ["Mali", "MLI"]
+  Senegal:
+    iso3: SEN
+    aliases: ["Senegal", "SEN"]
+  Nigeria:
+    iso3: NGA
+    aliases: ["Nigeria", "NGA"]
+  United Kingdom:
+    iso3: GBR
+    aliases: ["United Kingdom", "United Kingdom of Great Britain and Northern Ireland", "UK", "GBR"]
+  United States of America:
+    iso3: USA
+    aliases: ["United States of America", "United States", "USA", "US"]
+  Spain:
+    iso3: ESP
+    aliases: ["Spain", "ESP"]
+  Italy:
+    iso3: ITA
+    aliases: ["Italy", "ITA"]
+  Democratic Republic of the Congo:
+    iso3: COD
+    aliases: ["Democratic Republic of the Congo", "DRC", "COD", "RDC", "Congo, Dem. Rep."]
+  Uganda:
+    iso3: UGA
+    aliases: ["Uganda", "UGA"]
+adm1_aliases:
+  Guinea:
+    Boke: ["Boke", "Boké"]
+    Conakry: ["Conakry"]
+    Faranah: ["Faranah"]
+    Kankan: ["Kankan"]
+    Kindia: ["Kindia"]
+    Labe: ["Labe", "Labé"]
+    Mamou: ["Mamou"]
+    Nzerekore: ["Nzerekore", "N'Zerekore", "N'Zérékoré", "N’zérékoré"]

@@ -1,0 +1,6 @@
+{
+  "allow_auto_promote": false,
+  "cfi_threshold": 0.05,
+  "replay_sample_size": 500,
+  "candidate_requires_human_or_config_approval": true
+}

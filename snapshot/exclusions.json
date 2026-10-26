@@ -1,0 +1,1114 @@
+[
+  {
+    "path": "server/aibola/data/outputs/reports/manual_data_completion_package.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/outputs/reports/qwen_lora_gpu_dryrun.env",
+    "reason": "environment_credentials"
+  },
+  {
+    "path": "server/aibola/data/outputs/reports/qwen_lora_gpu_train.env",
+    "reason": "environment_credentials"
+  },
+  {
+    "path": "server/aibola/data/outputs/reports/qwen_lora_v2_gpu.env",
+    "reason": "environment_credentials"
+  },
+  {
+    "path": "server/aibola/data/raw/external_selected/geoboundaries/UGA/UGA_ADM2.geojson.tmp",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/raw/external_selected/worldpop/GIN/gin_ppp_2020_UNadj.tif.tmp",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/raw/external_v3/hdx/drc_2018_2020/hdx_cod_ab_cod_cod_admin_boundaries_gdb_zip.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/raw/external_v3/hdx/drc_2018_2020/hdx_cod_ab_cod_cod_admin_boundaries_geojson_zip.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/raw/external_v3/hdx/drc_2018_2020/hdx_cod_ab_cod_cod_admin_boundaries_shp_zip.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/raw/external_v3/hdx/drc_2018_2020/hdx_drc_health_facilities_cellulessanitaires_zsbeni24072019_zip.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/raw/external_v3/hdx/drc_2018_2020/hdx_drc_health_facilities_nk_it_aoiebola_structuressanitaire_v14_zip.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/aibola/data/raw/external_v3/hdx/drc_2018_2020/hdx_drc_health_facilities_nk_sk_it_aoiebola_airesante_v10_zip.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132441Z_98b3d2c9/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132441Z_98b3d2c9/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132441Z_98b3d2c9/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132441Z_98b3d2c9/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132822Z_9f89bad0/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132822Z_9f89bad0/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132822Z_9f89bad0/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T132822Z_9f89bad0/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133019Z_1dde6398/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133019Z_1dde6398/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133019Z_1dde6398/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133019Z_1dde6398/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133210Z_0c28d4b4/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133210Z_0c28d4b4/payload/runtime_evidence/original_run_report/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133210Z_0c28d4b4/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_e2e_archive_finalization_20260726T133210Z_0c28d4b4/payload/runtime_evidence/original_run_screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_correctness_repair_20260726T102742Z_15ee3ec0/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_correctness_repair_20260726T102742Z_15ee3ec0/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_correctness_repair_20260726T104558Z_1929f1d3/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_correctness_repair_20260726T104558Z_1929f1d3/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_correctness_repair_20260726T105104Z_e4d178f4/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_correctness_repair_20260726T105104Z_e4d178f4/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_e2e_20260726T091141Z_adc62a12/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_e2e_20260726T091141Z_adc62a12/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_e2e_20260726T091719Z_cc39d035/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_e2e_20260726T091719Z_cc39d035/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_e2e_20260726T092646Z_3bd578ed/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/epidemic_fasttrack_e2e_20260726T092646Z_3bd578ed/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/artifacts/p1_18_flunet_deep_forecast_p1_18_20260726T034421Z_7391aeea/baseline/database_schema.sql",
+    "reason": "historical_database_dump"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/ebola_historical_and_real_influenza_region_week_pipeline.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/ebola_official_trusted_review_summary_prediction_demo.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_e2e_archive_finalization_20260726T132441Z_98b3d2c9.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_e2e_archive_finalization_20260726T132822Z_9f89bad0.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_e2e_archive_finalization_20260726T133019Z_1dde6398.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_e2e_archive_finalization_20260726T133210Z_0c28d4b4.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T102144Z_99fb1742.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T102215Z_27f768e5.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T102401Z_ec93f95f.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T102742Z_15ee3ec0.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T104558Z_1929f1d3.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T105104Z_e4d178f4.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T090156Z_fa5d713a.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T090320Z_2c06515e.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T090447Z_b7210324.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T090553Z_ddecefba.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T091141Z_adc62a12.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T091719Z_cc39d035.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T092646Z_3bd578ed.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15_ebola_cod_trusted_expansion_complete.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_r2_don398_parser_review_case_complete.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_source_contract_parser_dry_run_complete.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_16r_ebola_source_acquisition.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair_repair-077b6c5c18f2.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair_repair-61bb1c47c464.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_flunet_deep_forecast_p1_18_20260726T034421Z_7391aeea.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_r0_postgres_cpu_runtime_p1_18_r0_20260726T041450Z_c8ae2946.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_r0_postgres_cpu_runtime_p1_18_r0_20260726T043322Z_9655e768.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_r0_postgres_cpu_runtime_p1_18_r0_20260726T044944Z_c0128776.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_r0a1_ahr1004_contract_preflight_p1_18_r0a1_20260726T070220Z_2cdf26c6.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_r0a1_ahr1004_contract_preflight_p1_18_r0a1_20260726T084515Z_e9d50ce1.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_r0a_postgres_identity_audit_p1_18_r0a_20260726T061646Z_41314a34.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_18_r0a_postgres_identity_audit_p1_18_r0a_20260726T061846Z_f9663cf7.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/three_disease_20260727T035007Z_ea77b36f.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/three_disease_20260727T040938Z_f378c929.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/three_disease_20260727T041633Z_a4291983.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/three_disease_20260727T042329Z_e1d602be.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/three_disease_20260727T043925Z_3e1bbfaf.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/three_disease_repair_20260727T085118Z_4d256b24.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/three_disease_repair_20260727T090216Z_9d79bc70.zip",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T102742Z_15ee3ec0/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T102742Z_15ee3ec0/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T104558Z_1929f1d3/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T104558Z_1929f1d3/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T105104Z_e4d178f4/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_correctness_repair_20260726T105104Z_e4d178f4/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T091141Z_adc62a12/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T091141Z_adc62a12/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T091719Z_cc39d035/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T091719Z_cc39d035/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T092646Z_3bd578ed/screenshots/dashboard_fasttrack_forecast.html",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/epidemic_fasttrack_e2e_20260726T092646Z_3bd578ed/screenshots/dashboard_fasttrack_forecast.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/dashboard_ebola_desktop_viewport_1440x900.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/dashboard_ebola_mobile_viewport_390x844.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/dashboard_influenza_desktop_viewport_1440x900.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/dashboard_influenza_mobile_viewport_390x844.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/review_detail_uganda_moh_desktop_viewport_1440x900.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/review_detail_uganda_moh_mobile_viewport_390x844.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/review_detail_ukhsa_desktop_viewport_1440x900.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/review_detail_who_afro_desktop_viewport_1440x900.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/review_list_desktop_viewport_1440x900.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_12_trusted_ebola_influenza_review_gate/screenshots/review_list_mobile_viewport_390x844.jpg",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15_ebola_cod_trusted_expansion/screenshots/dashboard_cod_ebola_all_time.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15_ebola_cod_trusted_expansion/screenshots/dashboard_cod_ebola_historical.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15_ebola_cod_trusted_expansion/screenshots/dashboard_cod_ebola_latest.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_r2_don398_parser_review_case/screenshots/dashboard_cod_ebola_baseline_login_blocker.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_r2_don398_parser_review_case/screenshots/review_case_668e3dd5_login_blocker.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_source_contract_parser_dry_run/screenshots/dashboard_baseline_nonzero.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_source_contract_parser_dry_run/screenshots/dashboard_baseline_real.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_source_contract_parser_dry_run/screenshots/package_validation_nonzero.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_source_contract_parser_dry_run/screenshots/review_baseline_nonzero.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_15b_source_contract_parser_dry_run/screenshots/review_baseline_real.png",
+    "reason": "unreviewed_ui_capture"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp/43b29c05-3758-5406-a30d-d018ad89add7/source_snapshot.sql",
+    "reason": "historical_database_dump"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp/43b29c05-3758-5406-a30d-d018ad89add7/http_evidence/api_unauth.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp/43b29c05-3758-5406-a30d-d018ad89add7/http_evidence/predictions_unauth_redirect.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_authenticated_api.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_authenticated_api.stderr.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_authenticated_api.stdout.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_unauth_api.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_unauth_api.stderr.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_unauth_api.stdout.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_unauth_predictions.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_unauth_predictions.stderr.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/commands/http_unauth_predictions.stdout.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/http_evidence/authenticated/authenticated_api_summary.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-077b6c5c18f2/source_snapshot/source_snapshot.corrected.sql",
+    "reason": "historical_database_dump"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_authenticated_api.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_authenticated_api.stderr.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_authenticated_api.stdout.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_unauth_api.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_unauth_api.stderr.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_unauth_api.stdout.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_unauth_predictions.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_unauth_predictions.stderr.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/commands/http_unauth_predictions.stdout.txt",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/http_evidence/authenticated/authenticated_api_summary.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_17a_flunet_prediction_mvp_repair/43b29c05-3758-5406-a30d-d018ad89add7/repair-61bb1c47c464/source_snapshot/source_snapshot.corrected.sql",
+    "reason": "historical_database_dump"
+  },
+  {
+    "path": "server/epidemic-openclaw/reports/p1_2_query_api_openclaw/credential_incident_closure.json",
+    "reason": "credentials"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database/postgresql18/data",
+    "reason": "active_database_directory_logical_export_instead"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database/postgresql18/run/.s.PGSQL.5432",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database_backups/epidemic_fasttrack_correctness_repair_20260726T102144Z_99fb1742/pre_repair_online_consistent.pgcustom",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database_backups/epidemic_fasttrack_correctness_repair_20260726T102215Z_27f768e5/pre_repair_online_consistent.pgcustom",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database_backups/epidemic_fasttrack_correctness_repair_20260726T102401Z_ec93f95f/pre_repair_online_consistent.pgcustom",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database_backups/epidemic_fasttrack_correctness_repair_20260726T102742Z_15ee3ec0/pre_repair_online_consistent.pgcustom",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database_backups/epidemic_fasttrack_correctness_repair_20260726T104558Z_1929f1d3/pre_repair_online_consistent.pgcustom",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database_backups/epidemic_fasttrack_correctness_repair_20260726T105104Z_e4d178f4/pre_repair_online_consistent.pgcustom",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/database_snapshots/epidemic_fasttrack_e2e_20260726T090320Z_2c06515e_pre_fasttrack/postgresql18/data",
+    "reason": "active_database_directory_logical_export_instead"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/ebola/raw/sha256/15/15d41ebf4ee44e107d9597cadea04bf05d5ee60c09278ab4afcd5b1deeadba01.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/ebola/raw/sha256/35/358f0c435fe9a3a29cf102a78b14409a7dd932bc70f4fb8ebf10f74227e7926e.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/ebola/raw/sha256/3e/3eab55a8a26779824cc72c7aaae0e9dec5a2fd9e8c8b6aa80d263dcdc5b2d3b7.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/ebola/raw/sha256/40/4003023d1cb2a4b9f5819fe1cf9be4b973706f7af5cd502bdb80cc7944b633d4.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/ebola/raw/sha256/9b/9bd0e84a03a884b54458e1d68ffdd1c9141d66133c8372a94d16cf08e04815ea.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/ebola/raw/sha256/be/be94ff738eafd6c996bfadd8fdb9fd7e2591d1beb227ca302d2cedf978327896.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/ebola/raw/sha256/cc/ccca029174e7a7f40301d82cac829f7f5649b5336ac7603d4e358cb049aad487.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/run/openclaw.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/.env",
+    "reason": "environment_credentials"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/agents/main/agent/openclaw-agent.sqlite",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/agents/main/agent/openclaw-agent.sqlite-shm",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/agents/main/agent/openclaw-agent.sqlite-wal",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/identity/device-auth.json",
+    "reason": "authentication_state"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.1.0-ce438ed48e2e515d.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.2.0-aaf63b75a05b9f1b.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.3.0-1863eaa319264495.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.4.0-c4801fb46c400dda.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.5.0-199d0d7cb8341726.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.5.0-7ba945f6cc85346d.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.6.0-7f0de8ccac3ef8be.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/npm/projects/openclaw-plugin-epidemic-query-tools/_openclaw-pack-archives/openclaw-plugin-epidemic-query-tools-0.7.0-e9d0870eef5f5af4.tgz",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/state/openclaw.sqlite",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/state/openclaw.sqlite-shm",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/openclaw/state/state/openclaw.sqlite-wal",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_10r/stage_3bd14b2f5fef/storage/isolated-e2e/debug.dump",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_10r/stage_3bd14b2f5fef/storage/isolated-e2e/source.dump",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_10r/stage_4c4f5d341a81/storage/isolated-e2e/source.dump",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/live_probe/artifacts/35/358f0c435fe9a3a29cf102a78b14409a7dd932bc70f4fb8ebf10f74227e7926e.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/live_probe/artifacts/3e/3eab55a8a26779824cc72c7aaae0e9dec5a2fd9e8c8b6aa80d263dcdc5b2d3b7.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/live_probe/artifacts/40/4003023d1cb2a4b9f5819fe1cf9be4b973706f7af5cd502bdb80cc7944b633d4.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/live_probe/artifacts/9b/9bd0e84a03a884b54458e1d68ffdd1c9141d66133c8372a94d16cf08e04815ea.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/live_probe/artifacts/be/be94ff738eafd6c996bfadd8fdb9fd7e2591d1beb227ca302d2cedf978327896.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784349298/storage/isolated-e2e/formal.dump",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784349386/storage/ebola/raw/sha256/35/358f0c435fe9a3a29cf102a78b14409a7dd932bc70f4fb8ebf10f74227e7926e.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784349386/storage/ebola/raw/sha256/3e/3eab55a8a26779824cc72c7aaae0e9dec5a2fd9e8c8b6aa80d263dcdc5b2d3b7.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784349386/storage/ebola/raw/sha256/40/4003023d1cb2a4b9f5819fe1cf9be4b973706f7af5cd502bdb80cc7944b633d4.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784349386/storage/ebola/raw/sha256/9b/9bd0e84a03a884b54458e1d68ffdd1c9141d66133c8372a94d16cf08e04815ea.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784349386/storage/ebola/raw/sha256/be/be94ff738eafd6c996bfadd8fdb9fd7e2591d1beb227ca302d2cedf978327896.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784349386/storage/isolated-e2e/formal.dump",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784352619/storage/ebola/raw/sha256/35/358f0c435fe9a3a29cf102a78b14409a7dd932bc70f4fb8ebf10f74227e7926e.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784352619/storage/ebola/raw/sha256/3e/3eab55a8a26779824cc72c7aaae0e9dec5a2fd9e8c8b6aa80d263dcdc5b2d3b7.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784352619/storage/ebola/raw/sha256/40/4003023d1cb2a4b9f5819fe1cf9be4b973706f7af5cd502bdb80cc7944b633d4.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784352619/storage/ebola/raw/sha256/9b/9bd0e84a03a884b54458e1d68ffdd1c9141d66133c8372a94d16cf08e04815ea.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784352619/storage/ebola/raw/sha256/be/be94ff738eafd6c996bfadd8fdb9fd7e2591d1beb227ca302d2cedf978327896.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_11/stage_1784352619/storage/isolated-e2e/formal.dump",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_12/discovery/quarantine/sha256/9b/9bd0e84a03a884b54458e1d68ffdd1c9141d66133c8372a94d16cf08e04815ea.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16/formal_artifacts/79/ebola-source-probe-79f25e32fa95d2c0e6add2afb55b3809d0c4155c42d0be76bcdfcf28af965f63.html",
+    "reason": "unrecognized_text_encoding"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16/formal_artifacts/d5/ebola-source-probe-d55657ef702994ae25c843dbd38ff3bd2d2734f8809ebf2dc4cb4c5bf9b155bf.html",
+    "reason": "unrecognized_text_encoding"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/03/west-africa-21dec4c4-fd88-4929-8aa1-73b7ffd5d9d9-roadmapsitrep_26Nov2014_eng.pdf-032371469a6d.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/05/west-africa-16873db0-4133-4eba-9df6-af0a2b4462dd-roadmapsitrep3_por.pdf-05330a1bc489.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/10/west-africa-f76b7a6a-d50a-42ee-a91a-1eb48ff20c5c-roadmapsitrep_31Oct2014_eng.pdf-10ba7ab6c862.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/2e/west-africa-42fd047c-1810-4661-a9ea-c11bc747c6d9-roadmapsitrep1_eng.pdf-2edb67ad6ccd.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/3c/west-africa-419c719e-28af-4ca7-8064-2113e2800131-roadmapsitrep_25Mar2015_eng.pdf-3c8914d3f726.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/46/west-africa-8ba0048c-f31f-4486-bd90-60a62d0c45a5-roadmapsitrep_12Nov2014_eng.pdf-46b1400bbbf5.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/50/drc-2018-2020-d27fea10-3c72-4f8c-8308-3067e54afe8d-SITREP_EVD_DRC-20190416-eng.pdf-5082fc359b38.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/55/west-africa-214d388a-7f8f-482d-a151-d5e857daea52-roadmapsitrep_24Dec14_eng.pdf-554d273f5282.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/57/west-africa-42fd047c-1810-4661-a9ea-c11bc747c6d9-roadmapsitrep1_por.pdf-5793ba15b751.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/5a/drc-2018-2020-fcaa19a5-be17-4a5b-b009-aa03a291f5a5-SITREP-EVD-DRC-20192404-eng.pdf-5a0ae128c898.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/6c/west-africa-ae6167d1-6e19-4ff8-8748-2dd158eb10bc-roadmapsitrep_7Nov2014_eng.pdf-6c25ddadbf40.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/6e/drc-2018-2020-609274e2-bf1e-4829-9b13-c0dee45aa317-SITREP_EVD_DRC_20190326-eng.pdf-6ea4d06f12a0.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/79/west-africa-e81f161d-c1a6-4ffd-bdfb-7eab66f3667a-roadmapsitrep_10Dec2014_eng.pdf-796d5a0c9cd2.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/85/drc-2018-2020-9f6b5995-1c79-47f5-9ad8-e3ba07a8aa4b-SITREP-EVD-DRC-20190407-eng.pdf-85eed8b8d128.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/86/drc-2018-2020-38e2b827-37d9-4d5f-9912-988d147409a8-SITREP_EVD_DRC_20190521-eng.pdf-86efe245a825.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/93/drc-2018-2020-bb8d9bf3-1f04-4a9d-84d1-ef9ac9019f83-SITREP_EVD_DRC_20190430-eng.pdf-93069ab44ad5.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/96/west-africa-888282f8-9928-4fdf-bb6f-b62c9e6f5ae7-roadmapsitrep_14Nov2014_eng.pdf-9641de44f529.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/97/west-africa-16873db0-4133-4eba-9df6-af0a2b4462dd-roadmapsitrep3_eng.pdf-97061827bf54.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/97/west-africa-755449cc-517e-4780-9d97-43ad85acf6e5-roadmapsitrep_5Nov14_eng.pdf-972a3c64f483.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/a2/drc-2018-2020-c9d138af-d171-4921-aacf-10982e19191e-SITREP_EVD_DRC_20190331-eng.pdf-a2c9a06bece1.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/a4/drc-2018-2020-f9de4686-6370-4354-9c1e-c2e107fa7ad4-SITREP_EVD_DRC_20190514-eng.pdf-a40d641b7be8.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/b8/west-africa-810a49b6-4cb8-4e7d-9182-4e4eb2e29970-roadmapsitrep_19Nov14_eng.pdf-b81079676897.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/b9/drc-2018-2020-b27c6361-9a59-4eda-b06e-ce527ad26000-SITREP_EVD_DRC_20190507-eng.pdf-b998b172320f.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/ba/west-africa-b8447dc8-998e-4481-8ac8-d89d4b2e86c2-roadmapsitrep_21Nov2014_eng.pdf-ba824d92508e.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/bb/west-africa-8f8a0411-1227-4b9e-9d71-2efd29f616ad-roadmapsitrep2_por.pdf-bb9ccb7c6daa.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/c7/west-africa-ca2dedb2-b0ec-4e40-aa8c-a89948438bd6-roadmapsitrep_15Apr2015_eng.pdf-c7c20c50017b.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/d5/west-africa-f9f4e44d-8856-41cb-a0d9-43d3da970bf2-roadmapsitrep_8Apr2015_eng.pdf-d5fee210af54.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/d7/west-africa-d73d69a7-b23d-4af2-aaf9-0241f81e1041-roadmapsitrep_31Dec14_eng.pdf-d73c11d14480.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/da/west-africa-42fd047c-1810-4661-a9ea-c11bc747c6d9-roadmapsitrep1_ara.pdf-da31a335710d.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/e9/west-africa-1f6aaa02-5736-49c0-81c1-d06c5d49c2ab-roadmapsitrep_3Dec2014_eng.pdf-e9e81d31268b.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/ef/west-africa-8f8a0411-1227-4b9e-9d71-2efd29f616ad-roadmapsitrep2_eng.pdf-ef36123811e1.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/f3/west-africa-7772cab6-137a-46a9-981c-946a80ae19ca-roadmapsitrep_17Dec2014_eng.pdf-f39dea8d9a82.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/f9/drc-2018-2020-92fcb187-4f1d-4091-9d92-9e5905ba9d41-SITREP_EVD_DRC_20190319-eng.pdf-f97bdec0f8e9.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_16r/ebola_source_acquisition/artifacts/fb/west-africa-8757e079-8a11-4761-9c69-c5e137df10b6-roadmapsitrep_1Apr2015_eng.pdf-fbc76edaf014.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_9_demo/postgresql18/data",
+    "reason": "active_database_directory_logical_export_instead"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_9_demo/run/dashboard.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_9_demo/run/discovery.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_9_demo/run/promotion.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/p1_9_demo/run/review.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/run/daily-update-coordinator/worker.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/run/preview-publication-worker/worker.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/run/query-api/query-api.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/run/retrieval-worker/worker.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/run/source-discovery-worker/worker.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/run/source-promotion-worker/worker.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/0bd4928e-4ad2-4710-ad87-196b13917ac1",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/0ea555ba-f1ec-47eb-ac04-39dde4864fe9",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/122b4988-b181-4cc9-9940-ecb4639f5fa4",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/18937c7b-41e1-439a-b9cb-62307a149b9b",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/23b3950b-f98e-4651-84b8-a9aed3512045",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/2eb2fdbe-5fa8-4429-a757-5758951aaffd",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/3095cd65-6bf2-4c3f-b5ea-f37286f0fb77",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/3a4afeab-baa9-4cc3-abd6-f56a5cdf1614",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/48fbad37-97dc-486f-813b-eea5f95e1def",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/4be58406-a5b1-4be2-800b-96f5b659f04d",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/547443e5-ec45-4ed2-8f94-a2c77486be7b",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/6ac904e7-375e-469a-afcb-d5126ded29fb",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/6ae523c1-28f2-434c-9e20-03d9bb07bf74",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/6b2f2439-3d86-4da9-90e9-d9f2e40af3a7",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/6f3d0e0f-fa7d-43b6-b4b0-8fe6cb86d071",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/73e99cb0-4610-4694-94e0-159c7c836d3d",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/75daa2cc-5070-49e6-b40e-82216214732e",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/807bf748-9336-4ec8-a05d-504f8e241257",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/866e846e-5f1a-4609-95b7-4a10721b3530",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/8e86e4b8-df4c-4ef8-80ab-3adab03f3e87",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/a534b3eb-3811-4116-b6be-51c6dab00e12",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/a7b13b38-b2f5-49d2-a719-aeb5fc023422",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/a9febf33-966b-4c01-9b1d-fb8d9b9e4564",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/d25d52bf-ae2e-42e3-9581-c0fd498b8b56",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/d583da9b-5f87-4887-8166-a5895314aa01",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/d7eed3e3-41a2-41e6-89b3-f1bf2bd4429c",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/dac3facf-83d0-485d-a59d-fac840c689c7",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/dda828af-b8a1-453d-abb2-1e6113fd1f70",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/e2e2c0d3-6f65-4fa7-b5b9-20726336df79",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/e74941b1-ee35-4379-a870-799dd33d17e6",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/f9ccc2cc-f7a0-4346-8448-9355ac94c48d",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/fbf04ef6-7e1a-4284-8944-2a0374395d21",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/storage/tmp/ff593469-dff1-4864-90db-2d37c8021a58",
+    "reason": "unreadable"
+  },
+  {
+    "path": "server/epidemic-openclaw/tests/fixtures/p1_12/who_afro_bvd_weekly.pdf",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-source-review-runtime/run/review.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  },
+  {
+    "path": "server/epidemic-dashboard-runtime/run/dashboard.pid",
+    "reason": "opaque_archive_runtime_database_or_publication"
+  }
+]

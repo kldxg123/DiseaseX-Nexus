@@ -1,0 +1,112 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+header,
+main {
+  max-width: 1380px;
+  margin: auto;
+  padding: 18px;
+}
+
+.filters,
+.sources,
+.triptych {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 14px;
+}
+
+.filters,
+.panel,
+.sources article,
+.card {
+  min-width: 0;
+  background: white;
+  border: 1px solid #dbe3ed;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.filters label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filters select,
+.filters input,
+.filters button {
+  max-width: 100%;
+  min-height: 38px;
+}
+
+.triptych {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.panel svg {
+  width: 100%;
+  height: 220px;
+  background: #f8fafc;
+}
+
+.panel polyline {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 3;
+}
+
+table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.notice {
+  padding: 12px;
+  background: #eff6ff;
+  border-left: 5px solid #2563eb;
+}
+
+code,
+a,
+p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 780px) {
+  header,
+  main {
+    padding: 10px;
+  }
+
+  .triptych {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 10px;
+  }
+}
