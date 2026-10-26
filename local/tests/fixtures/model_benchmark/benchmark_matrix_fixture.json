@@ -1,0 +1,39 @@
+{
+  "schema_version": "m2_m1_benchmark_matrix_v1",
+  "tasks": [
+    {
+      "task_id": "influenza_7d_moving_average_baseline_minimal",
+      "disease": "influenza",
+      "country": "United States",
+      "prediction_target": "outbreak_or_case_trend",
+      "horizon_days": 7,
+      "model_family": "baseline",
+      "model_name": "moving_average",
+      "feature_groups": ["epidemiological_lag"],
+      "train_window_weeks": 8,
+      "test_window_weeks": 1,
+      "rolling_folds": 4,
+      "metrics": ["mae", "rmse", "smape", "f1", "auroc", "pr_auc"],
+      "warnings": [],
+      "evidence_source": "fixture",
+      "requires_human_review": true
+    },
+    {
+      "task_id": "influenza_7d_seasonal_naive_lag_rolling",
+      "disease": "influenza",
+      "country": "United States",
+      "prediction_target": "outbreak_or_case_trend",
+      "horizon_days": 7,
+      "model_family": "baseline",
+      "model_name": "seasonal_naive",
+      "feature_groups": ["epidemiological_lag", "rolling_statistics", "seasonality"],
+      "train_window_weeks": 8,
+      "test_window_weeks": 1,
+      "rolling_folds": 4,
+      "metrics": ["mae", "rmse", "smape", "f1", "auroc", "pr_auc"],
+      "warnings": [],
+      "evidence_source": "fixture",
+      "requires_human_review": true
+    }
+  ]
+}

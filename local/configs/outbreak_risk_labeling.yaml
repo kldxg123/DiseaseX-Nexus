@@ -1,0 +1,16 @@
+primary_label: outbreak_within_4w
+auxiliary_labels: [outbreak_within_1w, outbreak_within_2w, risk_level]
+prediction_time: week_end
+positive_windows_days:
+  outbreak_within_1w: 7
+  outbreak_within_2w: 14
+  outbreak_within_4w: 28
+negative_clear_window_days: 56
+exclude_active_outbreak_weeks: true
+exclude_post_event_report_features: true
+locked_external_test:
+  - guinea_nzerekore_2021
+risk_level_rules:
+  no_risk: future 4 weeks have no outbreak and no pre-event signal
+  elevated_risk: pre-event official or OSINT signal exists or neighboring outbreak exposure exists
+  outbreak: outbreak_within_1w is true or event threshold reached

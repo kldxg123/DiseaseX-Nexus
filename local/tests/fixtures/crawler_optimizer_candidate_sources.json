@@ -1,0 +1,16 @@
+{
+  "sources": [
+    {
+      "name": "Candidate Local Health Feed",
+      "base_url": "https://candidate.invalid/health",
+      "status": "pending_review",
+      "source_score": 0.82
+    },
+    {
+      "name": "Low Score Candidate",
+      "base_url": "https://candidate.invalid/low",
+      "status": "pending_review",
+      "source_score": 0.2
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+<!--
+  插入位置：remote_src/kg_dashboard_app.py 中 KG_HTML 字符串内，
+  <section id="kg-param-loop"> … </section> 结束之后、</main> 之前
+  （即现文件第 155 行 `</section>` 与第 156 行 `</main>` 之间）。
+-->
+<section id="kg-qwen-loop">
+  <h2>Qwen 自动调优与学习闭环（Qwen Autotuning Loop）</h2>
+  <section class="kg-warning" id="kgQDisclaimer">
+    <strong>安全声明：</strong>本节全部结果处于 <b>Shadow</b> 状态（未发布、未晋级、不影响任何正式预测）；
+    演示数据为<b>历史回放</b>（非实时疫情数据）；所有内容<b>不构成医疗或公共卫生结论</b>；
+    <b>预测吻合度为 WAPE 换算指标，不是分类准确率，也不保证未来准确</b>。
+  </section>
+  <div class="kg-controls" aria-label="qwen autotuning controls">
+    <button id="kgQTrackA" type="button" aria-pressed="true">轨道 A：AUT / 军团菌病 / 月（历史回放演示）</button>
+    <button id="kgQTrackB" type="button" aria-pressed="false">轨道 B：FIN / 汉坦病毒 / 周（独立认证）</button>
+    <button id="kgQRun" type="button">运行 / 刷新 当前轨道的 Qwen 自动调优</button>
+  </div>
+  <div id="kgQTrackNote" class="kg-status"></div>
+  <div id="kgQRunInfo" class="kg-status" aria-live="polite">正在加载 Qwen 自动调优面板…</div>
+  <div class="kg-grid">
+    <article><h2>当前轨道（国家 / 病种 / 指标 / 频率）</h2><div id="kgQContext"></div></article>
+    <article><h2>数据画像（仅调优窗统计）</h2><div id="kgQProfile"></div></article>
+    <article class="kg-wide"><h2>KG 初始推荐与理由</h2><div id="kgQRec"></div></article>
+    <article class="kg-wide"><h2>Qwen 每轮调优方案</h2><div id="kgQPlans"></div></article>
+    <article class="kg-wide"><h2>参数范围变化（合同范围 vs 本轮范围）</h2><div id="kgQParamRanges"></div></article>
+    <article class="kg-wide"><h2>每轮 trial 数与验证指标</h2><div id="kgQRounds"></div></article>
+    <article class="kg-wide"><h2>调参过程（trial 序号 vs 共同样本 WAPE）</h2><svg id="kgQTuning" role="img" aria-label="Qwen 调参过程图"></svg><div id="kgQTuningNote"></div></article>
+    <article class="kg-wide"><h2>Held-out 独立测试结果（仅评估一次）</h2><div id="kgQEval"></div></article>
+    <article><h2>当前 Champion 与胜负原因</h2><div id="kgQChampion"></div></article>
+    <article><h2>反馈成熟进度</h2><div id="kgQFeedback"></div></article>
+    <article class="kg-wide"><h2>学习闭环时间线</h2><div id="kgQCycles"></div></article>
+    <article class="kg-wide"><h2>运行元信息（可复现性审计）</h2><div id="kgQMeta"></div></article>
+    <article class="kg-wide"><h2>限制说明</h2><div id="kgQLimits"></div></article>
+  </div>
+</section>

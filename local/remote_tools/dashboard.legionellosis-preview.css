@@ -1,0 +1,123 @@
+body.legionellosis-preview {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 0;
+  background: #f5f7fb;
+  color: #14213d;
+}
+.legionellosis-preview header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  background: #102a43;
+  color: white;
+}
+.legionellosis-preview header a,
+.legionellosis-preview header button {
+  color: white;
+}
+.legionellosis-preview main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+.warning {
+  border: 2px solid #b7791f;
+  background: #fff7e6;
+  color: #6b3f00;
+  border-radius: 12px;
+  padding: 1rem;
+  font-weight: 700;
+}
+.notice {
+  margin: 1rem 0;
+  padding: .8rem 1rem;
+  background: #e6fffa;
+  border: 1px solid #81e6d9;
+  border-radius: 10px;
+}
+.notice.error {
+  background: #fff5f5;
+  border-color: #fc8181;
+}
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: .8rem;
+  margin: 1rem 0;
+}
+.summary article,
+.card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+  padding: 1rem;
+}
+.summary strong {
+  display: block;
+  font-size: 1.8rem;
+  color: #1b6ca8;
+}
+svg {
+  width: 100%;
+  min-height: 360px;
+  background: white;
+  border-radius: 14px;
+}
+.grid {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+}
+.axis,
+.tick {
+  fill: #52616b;
+  font-size: 12px;
+}
+.axis-line {
+  stroke: #52616b;
+}
+.line {
+  fill: none;
+  stroke: #1b6ca8;
+  stroke-width: 3;
+}
+.dot {
+  fill: #1b6ca8;
+}
+.pending {
+  stroke: #b7791f;
+  stroke-width: 2;
+}
+.missing {
+  stroke: #718096;
+  stroke-width: 2;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+}
+th,
+td {
+  padding: .55rem .7rem;
+  border-bottom: 1px solid #edf2f7;
+  text-align: left;
+}
+th {
+  background: #edf2f7;
+}
+.badge {
+  display: inline-block;
+  padding: .15rem .45rem;
+  border-radius: 999px;
+  background: #c6f6d5;
+  color: #22543d;
+  font-size: .8rem;
+  font-weight: 700;
+}
+details {
+  margin: .5rem 0;
+}

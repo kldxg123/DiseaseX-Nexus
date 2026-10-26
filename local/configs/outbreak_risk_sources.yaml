@@ -1,0 +1,279 @@
+stage: P2a
+disease_scope: ebola_only
+max_download_resources_per_query: 1
+default_max_file_mb: 20
+sources:
+  who_don:
+    source_name: WHO Disease Outbreak News
+    source_type: label_source
+    license_or_terms: WHO website terms; metadata review required
+    urls:
+      - https://www.who.int/emergencies/disease-outbreak-news
+      - https://www.who.int/emergencies/disease-outbreak-news/item/2022-DON410
+      - https://www.who.int/emergencies/disease-outbreak-news/item/2021-DON316
+    role_hint: label_source_or_metadata
+    allowed_use: event_table_construction
+    max_file_mb: 5
+  cdc_history:
+    source_name: CDC Ebola outbreak history
+    source_type: label_source
+    license_or_terms: US CDC public website; metadata review required
+    urls:
+      - https://www.cdc.gov/ebola/outbreaks/index.html
+      - https://www.cdc.gov/vhf/ebola/history/chronology.html
+    role_hint: label_source_or_cross_check
+    allowed_use: event_table_construction
+    max_file_mb: 5
+  ecdc:
+    source_name: ECDC outbreak updates
+    source_type: label_source
+    license_or_terms: ECDC website terms; metadata review required
+    urls:
+      - https://www.ecdc.europa.eu/en/ebola-virus-disease
+    role_hint: metadata
+    allowed_use: source_discovery_cross_check
+    max_file_mb: 5
+  reliefweb_unicef:
+    source_name: ReliefWeb and UNICEF situation reports
+    source_type: label_source_or_metadata
+    license_or_terms: ReliefWeb/UNICEF terms; metadata review required
+    urls:
+      - https://api.reliefweb.int/v1/reports?appname=aibola-p2a&query[value]=Uganda%20Ebola%202022&limit=10
+    role_hint: metadata
+    allowed_use: source_discovery_cross_check
+    max_file_mb: 5
+  hdx:
+    source_name: HDX CKAN search
+    source_type: dataset_search
+    license_or_terms: per-resource HDX metadata
+    search_terms:
+      - Ebola cases
+      - Ebola Uganda 2022
+      - Ebola DRC health zone
+      - Guinea Ebola 2021
+    role_hint: dataset_candidate
+    allowed_use: structured_dataset_if_semantics_pass
+    max_file_mb: 20
+  github:
+    source_name: GitHub dataset search
+    source_type: dataset_search
+    license_or_terms: per-repository license
+    search_terms:
+      - Ebola DRC health zone cases
+      - Uganda 2022 Ebola district cases
+      - Ebola outbreak time series dataset
+    role_hint: dataset_candidate
+    allowed_use: structured_dataset_if_license_and_semantics_pass
+    max_file_mb: 0
+  gdelt:
+    source_name: GDELT aggregate signal API
+    source_type: osint_aggregate
+    license_or_terms: GDELT terms; aggregate counts only
+    url_template: "https://api.gdeltproject.org/api/v2/doc/doc?query={query}&mode=timelinevol&format=json&startdatetime={start}&enddatetime={end}"
+    queries:
+      - ebola
+      - "ebola outbreak"
+      - "hemorrhagic fever"
+    role_hint: feature_candidate
+    allowed_use: aggregate_pre_event_signal_counts_only
+    max_file_mb: 5
+  geoboundaries:
+    source_name: geoBoundaries
+    source_type: admin_boundary
+    license_or_terms: gbOpen
+    url_template: "https://www.geoboundaries.org/api/current/gbOpen/{iso3}/{adm}/"
+    countries: [GIN, LBR, SLE, COD, UGA]
+    admin_levels: [ADM1]
+    role_hint: background_feature
+    allowed_use: admin_matching_and_static_features
+    max_file_mb: 20
+  nasa_power:
+    source_name: NASA POWER
+    source_type: weather_api
+    license_or_terms: NASA POWER open data
+    url_template: "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,T2M,RH2M&community=AG&longitude={lon}&latitude={lat}&start={start}&end={end}&format=JSON"
+    role_hint: background_feature
+    allowed_use: weather_feature_candidate
+    max_file_mb: 5
+  ourairports:
+    source_name: OurAirports
+    source_type: mobility_proxy
+    license_or_terms: public domain / OurAirports terms
+    urls:
+      - https://davidmegginson.github.io/ourairports-data/airports.csv
+    role_hint: background_feature
+    allowed_use: airport_distance_count_proxy
+    max_file_mb: 20
+  geofabrik:
+    source_name: Geofabrik OSM Africa extract
+    source_type: mobility_proxy
+    license_or_terms: OpenStreetMap ODbL; Geofabrik terms
+    urls:
+      - https://download.geofabrik.de/africa.html
+    role_hint: metadata
+    allowed_use: road_proxy_discovery_only
+    max_file_mb: 5
+
+seed_events:
+  - outbreak_id: west_africa_guinea_2014
+    disease: Ebola virus disease
+    pathogen: Zaire ebolavirus
+    country: Guinea
+    iso3: GIN
+    adm1: Nzerekore
+    adm2: Gueckedou
+    health_zone_or_district: Gueckedou
+    region_id: GIN.ADM1.Nzerekore
+    event_start_date: "2014-03-23"
+    first_case_date: "2013-12-26"
+    first_official_report_date: "2014-03-23"
+    declaration_date: "2014-03-23"
+    source_name: WHO DON / CDC history
+    source_url: https://www.who.int/emergencies/disease-outbreak-news
+    source_type: retrospective_label_source
+    confidence: 0.80
+    usage: train_candidate
+  - outbreak_id: west_africa_liberia_2014
+    disease: Ebola virus disease
+    pathogen: Zaire ebolavirus
+    country: Liberia
+    iso3: LBR
+    adm1: Lofa
+    adm2: Foya
+    health_zone_or_district: Foya
+    region_id: LBR.ADM1.Lofa
+    event_start_date: "2014-03-30"
+    first_case_date: "2014-03-30"
+    first_official_report_date: "2014-03-30"
+    declaration_date: "2014-03-30"
+    source_name: WHO DON / CDC history
+    source_url: https://www.cdc.gov/ebola/outbreaks/index.html
+    source_type: retrospective_label_source
+    confidence: 0.75
+    usage: train_candidate
+  - outbreak_id: west_africa_sierra_leone_2014
+    disease: Ebola virus disease
+    pathogen: Zaire ebolavirus
+    country: Sierra Leone
+    iso3: SLE
+    adm1: Eastern
+    adm2: Kailahun
+    health_zone_or_district: Kailahun
+    region_id: SLE.ADM1.Eastern
+    event_start_date: "2014-05-25"
+    first_case_date: "2014-05-25"
+    first_official_report_date: "2014-05-25"
+    declaration_date: "2014-05-25"
+    source_name: WHO DON / CDC history
+    source_url: https://www.cdc.gov/ebola/outbreaks/index.html
+    source_type: retrospective_label_source
+    confidence: 0.75
+    usage: train_candidate
+  - outbreak_id: drc_equateur_2018
+    disease: Ebola virus disease
+    pathogen: Zaire ebolavirus
+    country: Democratic Republic of the Congo
+    iso3: COD
+    adm1: Equateur
+    adm2: Bikoro
+    health_zone_or_district: Bikoro
+    region_id: COD.ADM1.Equateur
+    event_start_date: "2018-05-08"
+    first_case_date: "2018-04-04"
+    first_official_report_date: "2018-05-08"
+    declaration_date: "2018-05-08"
+    source_name: WHO DON / CDC history
+    source_url: https://www.who.int/emergencies/disease-outbreak-news
+    source_type: retrospective_label_source
+    confidence: 0.75
+    usage: train_candidate
+  - outbreak_id: drc_kivu_ituri_2018
+    disease: Ebola virus disease
+    pathogen: Zaire ebolavirus
+    country: Democratic Republic of the Congo
+    iso3: COD
+    adm1: North Kivu
+    adm2: Beni
+    health_zone_or_district: Beni
+    region_id: COD.ADM1.North_Kivu
+    event_start_date: "2018-08-01"
+    first_case_date: "2018-07-25"
+    first_official_report_date: "2018-08-01"
+    declaration_date: "2018-08-01"
+    source_name: WHO DON / CDC history
+    source_url: https://www.who.int/emergencies/disease-outbreak-news
+    source_type: retrospective_label_source
+    confidence: 0.75
+    usage: train_candidate
+  - outbreak_id: drc_equateur_2020
+    disease: Ebola virus disease
+    pathogen: Zaire ebolavirus
+    country: Democratic Republic of the Congo
+    iso3: COD
+    adm1: Equateur
+    adm2: Mbandaka
+    health_zone_or_district: Mbandaka
+    region_id: COD.ADM1.Equateur
+    event_start_date: "2020-06-01"
+    first_case_date: "2020-05-31"
+    first_official_report_date: "2020-06-01"
+    declaration_date: "2020-06-01"
+    source_name: WHO DON / CDC history
+    source_url: https://www.who.int/emergencies/disease-outbreak-news
+    source_type: retrospective_label_source
+    confidence: 0.70
+    usage: train_candidate
+  - outbreak_id: uganda_mubende_2022
+    disease: Ebola virus disease
+    pathogen: Sudan ebolavirus
+    country: Uganda
+    iso3: UGA
+    adm1: Central
+    adm2: Mubende
+    health_zone_or_district: Mubende
+    region_id: UGA.ADM1.Central
+    event_start_date: "2022-09-20"
+    first_case_date: "2022-09-20"
+    first_official_report_date: "2022-09-20"
+    declaration_date: "2022-09-20"
+    source_name: WHO DON / CDC
+    source_url: https://www.who.int/emergencies/disease-outbreak-news/item/2022-DON410
+    source_type: label_source
+    confidence: 0.85
+    usage: train_candidate
+  - outbreak_id: uganda_kassanda_2022
+    disease: Ebola virus disease
+    pathogen: Sudan ebolavirus
+    country: Uganda
+    iso3: UGA
+    adm1: Central
+    adm2: Kassanda
+    health_zone_or_district: Kassanda
+    region_id: UGA.ADM1.Central_Kassanda
+    event_start_date: "2022-10-16"
+    first_case_date: "2022-10-16"
+    first_official_report_date: "2022-10-16"
+    declaration_date: "2022-09-20"
+    source_name: WHO DON / Uganda sitrep cross-check
+    source_url: https://www.who.int/emergencies/disease-outbreak-news/item/2022-DON410
+    source_type: label_source
+    confidence: 0.65
+    usage: train_candidate
+  - outbreak_id: guinea_nzerekore_2021
+    disease: Ebola virus disease
+    pathogen: Zaire ebolavirus
+    country: Guinea
+    iso3: GIN
+    adm1: Nzerekore
+    adm2: Nzerekore
+    health_zone_or_district: Nzerekore
+    region_id: GIN.ADM1.Nzerekore_2021
+    event_start_date: "2021-02-14"
+    first_case_date: "2021-01-18"
+    first_official_report_date: "2021-02-14"
+    declaration_date: "2021-02-14"
+    source_name: WHO DON
+    source_url: https://www.who.int/emergencies/disease-outbreak-news/item/2021-DON316
+    source_type: label_source
+    confidence: 0.85
+    usage: external_test_locked

@@ -1,0 +1,68 @@
+{
+  "query": "United States influenza surveillance data FluView",
+  "results": [
+    {
+      "title": "CDC FluView Interactive influenza surveillance dashboard",
+      "url": "https://www.cdc.gov/flu/weekly/fluviewinteractive.htm",
+      "snippet": "Interactive dashboard for weekly influenza-like illness, virologic surveillance, and regional flu activity data.",
+      "source_name": "CDC FluView Interactive",
+      "rank": 1
+    },
+    {
+      "title": "CDC Weekly U.S. Influenza Surveillance Report",
+      "url": "https://www.cdc.gov/flu/weekly/index.htm",
+      "snippet": "Official weekly influenza surveillance report updated during flu season with national and regional indicators.",
+      "source_name": "CDC FluView Weekly Report",
+      "rank": 2
+    },
+    {
+      "title": "CDC FluView downloadable data table",
+      "url": "https://www.cdc.gov/flu/weekly/weeklyarchives2024-2025/data/senAllregt.csv",
+      "snippet": "CSV data table with influenza-like illness values, specimens tested, and positive specimens by week.",
+      "source_name": "CDC FluView CSV",
+      "rank": 3
+    },
+    {
+      "title": "ECDC ERVISS influenza dashboard",
+      "url": "https://erviss.org",
+      "snippet": "European respiratory virus surveillance summary with influenza dashboard and weekly structured data.",
+      "source_name": "ECDC ERVISS",
+      "rank": 4
+    },
+    {
+      "title": "WHO influenza updates",
+      "url": "https://www.who.int/teams/global-influenza-programme/surveillance-and-monitoring/influenza-updates",
+      "snippet": "Global influenza surveillance updates and official situation reports.",
+      "source_name": "WHO Global Influenza Programme",
+      "rank": 5
+    },
+    {
+      "title": "State influenza activity dashboard",
+      "url": "https://health.example.gov/influenza/activity-dashboard",
+      "snippet": "State health influenza dashboard with weekly ILI activity and respiratory virus trend tables.",
+      "source_name": "State Health Influenza Example",
+      "rank": 6
+    },
+    {
+      "title": "Influenza hospitalizations dataset",
+      "url": "https://data.cdc.gov/browse?q=influenza%20hospitalizations",
+      "snippet": "Public data catalog result for influenza hospitalization surveillance datasets.",
+      "source_name": "CDC Data Catalog",
+      "rank": 7
+    },
+    {
+      "title": "Influenza news report",
+      "url": "https://www.healthnews.example/influenza-season-update",
+      "snippet": "News article about flu season activity and local influenza outbreaks.",
+      "source_name": "Health News Example",
+      "rank": 8
+    },
+    {
+      "title": "Invalid influenza result",
+      "url": "not-a-valid-url",
+      "snippet": "Invalid URL should be ignored by parser.",
+      "source_name": "Invalid",
+      "rank": 9
+    }
+  ]
+}

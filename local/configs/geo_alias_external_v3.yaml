@@ -1,0 +1,50 @@
+version: 1
+thresholds:
+  min_admin_match_coverage: 0.95
+  max_needs_review_ratio: 0.05
+  fuzzy_match_threshold: 0.86
+  fuzzy_review_threshold: 0.78
+
+countries:
+  Democratic Republic of the Congo:
+    iso3: COD
+    aliases:
+      - DRC
+      - RDC
+      - Congo DR
+      - Congo Democratic Republic
+      - Democratic Republic Congo
+      - Republique Democratique du Congo
+  Uganda:
+    iso3: UGA
+    aliases: [UGA, Republic of Uganda]
+  Guinea:
+    iso3: GIN
+    aliases: [Guinee, Republic of Guinea]
+  Liberia:
+    iso3: LBR
+    aliases: [LBR, Republic of Liberia]
+  Sierra Leone:
+    iso3: SLE
+    aliases: [SLE, Republic of Sierra Leone]
+
+adm1_aliases:
+  Democratic Republic of the Congo:
+    North Kivu: [Nord Kivu, Nord-Kivu, N Kivu]
+    Ituri: [Province de l Ituri]
+    Equateur: [Equateur, Ecuador]
+  Uganda:
+    Mubende: [Mubende District]
+    Kassanda: [Kasanda, Kassanda District]
+    Kampala: [Kampala District]
+    Wakiso: [Wakiso District]
+    Kyegegwa: [Kyegegwa District]
+  Guinea:
+    Nzerekore: [N Zerekore, N'Zerekore, N'zerekore]
+    Goueke: [Gouecke, Goueké]
+  Liberia:
+    Montserrado: [Montserrado County]
+    Lofa: [Lofa County]
+  Sierra Leone:
+    Kailahun: [Kailahun District]
+    Kenema: [Kenema District]

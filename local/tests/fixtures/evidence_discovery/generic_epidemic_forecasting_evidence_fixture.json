@@ -1,0 +1,42 @@
+{
+  "documents": [
+    {
+      "title": "Generic epidemic forecasting model families and validation requirements",
+      "source_type": "synthetic_review_summary",
+      "disease": "generic",
+      "target": "outbreak_or_case_trend",
+      "features_mentioned": [
+        "lag cases",
+        "rolling mean",
+        "seasonality",
+        "weather",
+        "mobility",
+        "testing volume",
+        "positivity rate",
+        "public reports",
+        "source quality indicators"
+      ],
+      "models_mentioned": [
+        "moving_average",
+        "seasonal_naive",
+        "arima_or_sarima",
+        "random_forest",
+        "gradient_boosting",
+        "xgboost",
+        "lightgbm",
+        "lstm_or_temporal_deep_learning",
+        "transformer_or_foundation_model",
+        "graph_or_mobility_model"
+      ],
+      "metrics_mentioned": ["MAE", "RMSE", "SMAPE", "Brier score", "AUROC", "PR AUC"],
+      "limitations": [
+        "Deep and transformer models are not first-batch choices for small local datasets.",
+        "External features require source approval and missingness analysis."
+      ],
+      "summary": "Short synthetic summary: epidemic forecasting evidence should be translated into candidate feature and model pools, then validated with rolling backtests.",
+      "evidence_source": "local_fixture_generic_epidemic_review",
+      "country_scope": ["global"],
+      "applicability_notes": ["Use as cross-disease prior, not as direct proof of accuracy."]
+    }
+  ]
+}

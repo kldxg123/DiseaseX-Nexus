@@ -1,0 +1,54 @@
+{
+  "documents": [
+    {
+      "title": "Influenza weekly forecasting with seasonal baselines and boosted trees",
+      "source_type": "synthetic_literature_summary",
+      "disease": "influenza",
+      "target": "outbreak_or_case_trend",
+      "features_mentioned": [
+        "lag cases",
+        "rolling mean",
+        "seasonality",
+        "testing volume",
+        "positivity rate",
+        "official reports",
+        "source quality indicators"
+      ],
+      "models_mentioned": [
+        "moving_average",
+        "seasonal_naive",
+        "random_forest",
+        "gradient_boosting",
+        "xgboost",
+        "lightgbm",
+        "arima_or_sarima"
+      ],
+      "metrics_mentioned": ["MAE", "RMSE", "SMAPE", "rolling backtest"],
+      "limitations": [
+        "Weather and mobility features require separate approved data sources.",
+        "Boosting models require leakage checks."
+      ],
+      "summary": "Short synthetic summary: weekly influenza trends can often be benchmarked with seasonal baselines and tree models using lagged surveillance signals.",
+      "evidence_source": "local_fixture_influenza_summary",
+      "country_scope": ["United States"],
+      "applicability_notes": ["Useful for first-batch M2 baseline and tree ensemble planning."]
+    },
+    {
+      "title": "Influenza mobility and graph model readiness notes",
+      "source_type": "synthetic_database_note",
+      "disease": "influenza",
+      "target": "outbreak_or_case_trend",
+      "features_mentioned": ["mobility", "weather", "lag cases", "public reports"],
+      "models_mentioned": ["graph_or_mobility_model", "lstm_or_temporal_deep_learning"],
+      "metrics_mentioned": ["RMSE", "AUROC"],
+      "limitations": [
+        "Mobility data needs privacy review.",
+        "Deep sequence models are data hungry."
+      ],
+      "summary": "Short synthetic summary: mobility and graph approaches may help later, but they are not first-batch candidates without approved external features.",
+      "evidence_source": "local_fixture_influenza_mobility_note",
+      "country_scope": ["United States"],
+      "applicability_notes": ["Treat as future candidate after data governance review."]
+    }
+  ]
+}

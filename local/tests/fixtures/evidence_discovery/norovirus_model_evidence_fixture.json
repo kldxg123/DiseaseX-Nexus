@@ -1,0 +1,33 @@
+{
+  "documents": [
+    {
+      "title": "Norovirus outbreak count forecasting with official surveillance indicators",
+      "source_type": "synthetic_literature_summary",
+      "disease": "norovirus",
+      "target": "outbreak_or_case_trend",
+      "features_mentioned": [
+        "outbreak count",
+        "lag cases",
+        "rolling mean",
+        "seasonality",
+        "official reports",
+        "source quality indicators"
+      ],
+      "models_mentioned": [
+        "moving_average",
+        "seasonal_naive",
+        "arima_or_sarima",
+        "random_forest"
+      ],
+      "metrics_mentioned": ["MAE", "RMSE", "F1"],
+      "limitations": [
+        "Small weekly samples favor simple baselines and interpretable models.",
+        "Outbreak labels require human review."
+      ],
+      "summary": "Short synthetic summary: norovirus outbreak forecasting should start with seasonal baselines and interpretable models over official surveillance indicators.",
+      "evidence_source": "local_fixture_norovirus_summary",
+      "country_scope": ["United States"],
+      "applicability_notes": ["Aligned with M1 NoroSTAT pipeline outputs."]
+    }
+  ]
+}

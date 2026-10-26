@@ -1,0 +1,61 @@
+{
+  "schema_version": "kg.paper_benchmark.v1",
+  "track_id": "E",
+  "title_zh": "轨道 E：新加坡登革热论文对齐历史回放",
+  "country": "SGP",
+  "disease": "dengue",
+  "metric": "cases_new",
+  "frequency": "week",
+  "evaluation_identity": "RETROSPECTIVE_PAPER_ALIGNED_BENCHMARK",
+  "is_fresh_heldout": false,
+  "governance_note_zh": "该链路严格复用论文时间范围、切分规模和逐周一步预测协议，但使用的是官方目录重建序列，不是作者原始数据文件；因此属于可复算历史回放，不构成新的独立盲测认证。",
+  "source": {
+    "publisher": "Singapore Ministry of Health via data.gov.sg",
+    "dataset_id": "d_ca168b2cb763640d72c4600a68f9909e",
+    "source_page": "https://data.gov.sg/datasets/d_ca168b2cb763640d72c4600a68f9909e/view",
+    "source_response_sha256": "92e3d7b35df31b6cfeacbaea969688bbcd35a49c1342709d55988b67a0e8e62a",
+    "canonical_csv_sha256": "5efbff843186392c86862361a47c9fb15f30090d0a379b46f9e44267060afac2",
+    "canonical_rows": 412,
+    "range": "2012-W01 至 2019-W48"
+  },
+  "split": {
+    "lag_warmup": 1,
+    "training_labels": 311,
+    "validation": 50,
+    "test": 50,
+    "test_opened_once_after_validation_selection": true
+  },
+  "knowledge_graph_recommendation": {
+    "primary_adapter": "lagged_count_boosting.v1",
+    "selection": "validation-selected deterministic ensemble",
+    "components": [
+      {"model": "paper_ar2", "weight": 0.25},
+      {"model": "lagged_count_boosting.v1", "weight": 0.55},
+      {"model": "last_value", "weight": 0.20}
+    ],
+    "reason_zh": "登革热周度病例是非负、季节性且可能过度离散的计数序列。知识图谱推荐滞后计数提升模型捕捉非线性，同时保留论文 AR(2) 的短期自相关结构和 last-value 的稳健惯性；组合权重只在验证集选择，测试集不参与调参。"
+  },
+  "metrics": {
+    "validation": {"wape": 0.17158645210296097, "agreement_pct": 82.8413547897039, "mae": 10.199098713000001, "rmse": 12.465005634045667},
+    "test": {"wape": 0.1279786398441627, "agreement_pct": 87.20213601558373, "mae": 38.76217043599999, "rmse": 47.22389692649433},
+    "threshold": {"agreement_pct_min": 70.0, "wape_max": 0.30},
+    "target_met": true
+  },
+  "comparators": {
+    "paper_ar2_test": {"wape": 0.11343251452720549, "agreement_pct": 88.65674854727945, "rmse": 43.53188523232137},
+    "last_value_test": {"wape": 0.11951928156365557, "agreement_pct": 88.04807184363445, "rmse": 44.715545395309675},
+    "project_single_model_test": {"wape": 0.13819490729001588, "agreement_pct": 86.18050927099841, "rmse": 51.02598327047902}
+  },
+  "paper": {
+    "title": "Machine Learning Models for Dengue Forecasting in Singapore",
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2407.00332"
+  },
+  "reproducibility": {
+    "comparison_json_sha256": "76ad2901d6dc2cb687720b2ff819eb0511ddc214a20dde565c8ea030f7dd7bda",
+    "paired_predictions_csv_sha256": "8f6ea72aded329e041b0bc0c36688e4cfcb2ce24f760cfc3377562c22cf62f11",
+    "ensemble_grid_csv_sha256": "b92102e6009148b604ac592e5afede01a0e5a194c53ac1053c63118e4e2d8d80",
+    "project_grid_csv_sha256": "12cba9460fb0a5729b697af4ec5866c2e073ceac171338990479c35f8e6c32cd"
+  },
+  "publication_state": "SHADOW_ONLY_NOT_PROMOTED"
+}

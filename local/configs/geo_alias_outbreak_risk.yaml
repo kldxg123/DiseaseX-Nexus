@@ -1,0 +1,22 @@
+aliases:
+  Democratic Republic of the Congo:
+    - DRC
+    - DR Congo
+    - Congo-Kinshasa
+    - COD
+  North Kivu:
+    - Nord-Kivu
+    - Kivu Nord
+  Equateur:
+    - Equateur
+    - Ecuador Province
+  Nzerekore:
+    - N'Zerekore
+    - Nzerekore
+  Mubende:
+    - Mubende District
+  Kassanda:
+    - Kassanda District
+matching:
+  train_threshold: 0.95
+  review_threshold: 0.85

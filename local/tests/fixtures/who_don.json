@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "title": "Disease outbreak news fixture",
+      "url": "/emergencies/disease-outbreak-news/item/fixture",
+      "published_at": "2026-01-15",
+      "summary": "<p>WHO fixture summary for local connector parsing.</p>"
+    }
+  ]
+}

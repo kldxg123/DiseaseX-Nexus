@@ -1,0 +1,93 @@
+[build-system]
+requires = []
+build-backend = "editable_backend"
+backend-path = ["tools"]
+
+[project]
+name = "ebola-step-quantitative-trend"
+version = "0.1.0"
+description = "Local-first infectious disease intelligence platform skeleton."
+requires-python = ">=3.10"
+dependencies = [
+    "alembic>=1.13",
+    "boto3>=1.34",
+    "fastapi>=0.110",
+    "httpx>=0.27",
+    "psycopg[binary]>=3.1",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "redis>=5",
+    "SQLAlchemy>=2.0",
+    "streamlit>=1.35",
+    "uvicorn[standard]>=0.29",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+]
+lint = [
+    "ruff>=0.5",
+]
+
+[project.scripts]
+epidemic-check-environment = "scripts.check_environment:main"
+epidemic-data-quality = "data_quality_agent.cli:main"
+epidemic-source-discovery = "source_discovery_agent.cli:main"
+source-discovery-agent = "source_discovery_agent.cli:main"
+epidemic-worker = "worker_agent.cli:main"
+epidemic-model-benchmark = "model_benchmark_agent.cli:main"
+epidemic-live-source-search = "live_source_search_orchestrator.cli:main"
+epidemic-deepseek-web-search = "deepseek_web_search_agent.cli:main"
+epidemic-who-data-acquisition = "scripts.run_who_ebola_data_acquisition_test:main"
+epidemic-who-ingest-approved = "scripts.ingest_approved_who_ebola_rows:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = [
+    ".",
+    "packages",
+]
+include = [
+    "apps*",
+    "common*",
+    "crawler_agent*",
+    "crawler_optimizer_agent*",
+    "cleaner_agent*",
+    "data_quality_agent*",
+    "deepseek_web_search_agent*",
+    "evidence_discovery_agent*",
+    "live_source_search_orchestrator*",
+    "model_benchmark_agent*",
+    "predictor_agent*",
+    "scripts*",
+    "source_discovery_agent*",
+    "web_search_providers*",
+    "worker_agent*",
+    "src*",
+]
+exclude = [
+    "tests*",
+    "migrations*",
+    "infra*",
+    "reports*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+    ".",
+    "packages",
+    "apps/api",
+    "apps/dashboard",
+]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]

@@ -1,0 +1,6 @@
+HOST=SERVER_HOST
+PORT=2222
+USER=fake-deploy-user
+SSH_KEY_PATH=/tmp/fake_deploy_key
+DEPLOY_PATH=/opt/fake-epidemic-agent
+DOMAIN=example.invalid

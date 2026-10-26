@@ -1,0 +1,17 @@
+{
+  "expected_schema_version": "m2_m2_feature_ablation_v1",
+  "expected_models": [
+    "feature_rule_baseline",
+    "weighted_signal_baseline",
+    "lag_rolling_linear_baseline",
+    "positivity_adjusted_baseline"
+  ],
+  "expected_minimum_feature_groups": [
+    "epidemiological_lag",
+    "rolling_statistics"
+  ],
+  "not_yet_ready_feature_groups": [
+    "mobility",
+    "weather"
+  ]
+}

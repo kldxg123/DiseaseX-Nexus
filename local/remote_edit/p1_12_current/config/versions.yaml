@@ -1,0 +1,52 @@
+ubuntu: "Ubuntu 22.04.1 LTS"
+gpu: "NVIDIA GeForce RTX 4090"
+nvidia_driver: "595.58.03"
+cuda_driver: "13.2"
+cuda_toolkit: "not_installed"
+conda: "conda 22.11.1"
+base_python: "Python 3.10.8"
+project_python: "Python 3.10.20"
+project_path: "USER_HOME/autodl-tmp/epidemic-openclaw"
+data_disk_path: "USER_HOME/autodl-tmp"
+openclaw: not_installed
+node: "not_installed"
+postgresql: not_deployed
+qwen: not_deployed
+vllm: not_deployed
+
+
+# P0-2 PostgreSQL
+postgresql_version: "18.4"
+postgresql_conda_environment: "USER_HOME/autodl-tmp/conda/envs/postgresql18"
+postgresql_channel: conda-forge
+postgresql_port: 5432
+postgresql_data_directory: "USER_HOME/autodl-tmp/epidemic-openclaw/storage/database/postgresql18/data"
+postgresql_service_user: epidemicdb
+postgresql_status: deployed
+
+
+# P0-3 Qwen/vLLM
+qwen_model_id: "Qwen/Qwen3-8B-AWQ"
+qwen_served_model_name: qwen3-8b-awq-local
+qwen_revision: "e6d5e9ba92fd11fe236428b6e27ff0277f6e6c4d"
+qwen_source: modelscope_official
+qwen_license: apache-2.0
+qwen_quantization: AWQ
+vllm_version: "0.24.0"
+pytorch_version: "2.11.0+cu129"
+pytorch_cuda: "12.9"
+qwen_vllm_environment: "USER_HOME/autodl-tmp/conda/envs/qwen-vllm"
+qwen_model_directory: "USER_HOME/autodl-tmp/epidemic-openclaw/models/llm/Qwen3-8B-AWQ"
+qwen_service_address: "http://127.0.0.1:8000"
+qwen_max_model_len: 32768
+qwen_gpu_memory_utilization: 0.85
+qwen_tool_parser: hermes
+qwen_reasoning_parser: qwen3
+qwen_default_thinking: false
+qwen_service_status: deployed
+
+# P0-4 fixed runtime
+node: "24.18.0"
+npm: "11.16.0"
+openclaw: "2026.6.11"
+openclaw_gateway_port: 18789

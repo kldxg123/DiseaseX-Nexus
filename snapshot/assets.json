@@ -48,5 +48,15 @@
     "name": "server-db-part-001.zip",
     "bytes": 128877735,
     "sha256": "44eaa937a9438880687d791b482ce5a9e0820cfc1f200b00028660423ccbe15f"
+  },
+  {
+    "name": "local-data-part-001.zip",
+    "bytes": 515668439,
+    "sha256": "60e7f3c2338268c3bdf2dca3497860f67a501b00e17a46683e99807937424a88"
+  },
+  {
+    "name": "local-data-part-002.zip",
+    "bytes": 103986709,
+    "sha256": "5d6fabdd1a78300b68ef53fbab44889db5f1faa3d3a48498e82533218da0e768"
   }
 ]

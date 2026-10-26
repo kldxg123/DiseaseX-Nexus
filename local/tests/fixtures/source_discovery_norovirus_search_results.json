@@ -1,0 +1,75 @@
+{
+  "query": "United States norovirus outbreak data",
+  "results": [
+    {
+      "title": "CDC NoroSTAT Data Table",
+      "url": "https://www.cdc.gov/norovirus/php/reporting/norostat-data-table.html",
+      "snippet": "Data table for suspected and confirmed norovirus outbreaks reported to NoroSTAT.",
+      "source_name": "CDC NoroSTAT",
+      "rank": 1
+    },
+    {
+      "title": "CDC National Outbreak Reporting System NORS",
+      "url": "https://www.cdc.gov/nors/index.html",
+      "snippet": "NORS tracks outbreak reports including foodborne, waterborne, and enteric disease events.",
+      "source_name": "CDC NORS",
+      "rank": 2
+    },
+    {
+      "title": "CDC public dataset listing for norovirus surveillance",
+      "url": "https://data.cdc.gov/browse?q=norovirus",
+      "snippet": "Public data catalog search result for norovirus surveillance datasets.",
+      "source_name": "CDC Data Catalog",
+      "rank": 3
+    },
+    {
+      "title": "WHO Disease Outbreak News",
+      "url": "https://www.who.int/emergencies/disease-outbreak-news",
+      "snippet": "Official disease outbreak news updates and public health notices.",
+      "source_name": "WHO DON",
+      "rank": 4
+    },
+    {
+      "title": "ECDC Surveillance Atlas",
+      "url": "https://www.ecdc.europa.eu/en/surveillance-atlas-infectious-diseases",
+      "snippet": "European surveillance data portal with disease dashboard views.",
+      "source_name": "ECDC",
+      "rank": 5
+    },
+    {
+      "title": "State health norovirus outbreak dashboard",
+      "url": "https://health.example.gov/norovirus/outbreak-dashboard",
+      "snippet": "A state health dashboard style page for norovirus outbreak indicators.",
+      "source_name": "State Health Example",
+      "rank": 6
+    },
+    {
+      "title": "Health news report on norovirus outbreaks",
+      "url": "https://www.healthnews.example/norovirus-school-outbreaks",
+      "snippet": "Short news summary about recent norovirus school outbreaks.",
+      "source_name": "Health News Example",
+      "rank": 7
+    },
+    {
+      "title": "Invalid search result",
+      "url": "not-a-url",
+      "snippet": "Invalid URL should be ignored.",
+      "source_name": "Invalid",
+      "rank": 8
+    },
+    {
+      "title": "Duplicate CDC NoroSTAT Result",
+      "url": "https://www.cdc.gov/norovirus/php/reporting/norostat-data-table.html",
+      "snippet": "Duplicate URL should be deduplicated.",
+      "source_name": "CDC NoroSTAT Duplicate",
+      "rank": 9
+    },
+    {
+      "title": "Weather dashboard unrelated",
+      "url": "https://www.example.org/weather-dashboard",
+      "snippet": "Weather forecast charts unrelated to outbreak surveillance.",
+      "source_name": "Example Weather",
+      "rank": 10
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+feature_policy:
+  require_feature_source: true
+  require_publish_time: true
+  require_feature_cutoff_time: true
+  exclude_if_publish_after_prediction_week: true
+static_features:
+  - population
+  - population_density
+  - road_density
+  - airport_distance_km
+  - airport_count_100km
+weekly_features:
+  - rainfall_mean_7d
+  - rainfall_anomaly_7d
+  - humidity_mean_7d
+  - humidity_anomaly_7d
+  - temperature_mean_7d
+  - temperature_anomaly_7d
+  - official_signal_count_7d
+  - official_signal_count_14d
+  - gdelt_signal_count_7d
+  - gdelt_signal_count_14d
+  - symptom_signal_count_7d
+  - historical_case_signal
+osint_policy:
+  aggregate_only: true
+  forbidden: [personal_accounts, private_messages, individual_identifiers, raw_article_text_as_pre_event_feature]

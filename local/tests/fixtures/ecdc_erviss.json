@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "pathogen": "RSV",
+      "region": "EU/EEA",
+      "week": "2026-W02",
+      "trend": "increasing",
+      "positivity": "12%"
+    }
+  ]
+}

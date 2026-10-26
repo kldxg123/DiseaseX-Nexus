@@ -1,0 +1,6 @@
+{
+  "model": "rule_baseline",
+  "chronological_train_fraction": 0.7,
+  "chronological_validation_fraction": 0.15,
+  "class_weight": "balanced"
+}

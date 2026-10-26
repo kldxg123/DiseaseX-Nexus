@@ -1,0 +1,649 @@
+# ruff: noqa: E501
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import uuid
+from dataclasses import dataclass
+from datetime import date, timedelta
+from typing import Any
+
+import psycopg
+
+from .loader import disease_alias_map, load_graph
+
+NS = uuid.UUID("c87f8a95-12c2-5b4d-a3bf-cd24867f5d37")
+
+
+def stable_uuid(kind: str, key: str) -> uuid.UUID:
+    return uuid.uuid5(NS, f"{kind}:{key}")
+
+
+def sha_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8", "ignore")).hexdigest()
+
+
+@dataclass(frozen=True)
+class ModelSpec:
+    name: str
+    min_periods: int
+    cadence: str
+    supports_missing: bool
+    description_cn: str
+
+
+class ModelRegistry:
+    def __init__(self) -> None:
+        self.models = {
+            "last_value_baseline": ModelSpec(
+                "last_value_baseline", 1, "any", True, "使用截止日前最后一个真实观测值，适合极短或稀疏序列的保守基线。"
+            ),
+            "rolling_mean_baseline": ModelSpec(
+                "rolling_mean_baseline", 4, "any", True, "使用最近若干个非缺失真实观测的平均值，适合短序列趋势演示。"
+            ),
+            "seasonal_naive_12_month": ModelSpec(
+                "seasonal_naive_12_month", 24, "month", True, "使用去年同月作为季节性基线，适合具备两年及以上月度数据的病种。"
+            ),
+            "seasonal_naive_52_week": ModelSpec(
+                "seasonal_naive_52_week", 104, "week", True, "使用去年同周作为季节性基线，要求至少两个完整周度季节循环。"
+            ),
+        }
+
+    def executable(self) -> list[dict[str, Any]]:
+        return [spec.__dict__ for spec in self.models.values()]
+
+    def choose(self, profile: dict[str, Any]) -> tuple[ModelSpec, str]:
+        n = int(profile.get("observed_non_null_period_count") or 0)
+        cadence = str(profile.get("cadence") or "")
+        if cadence == "month" and n >= 24:
+            return self.models["seasonal_naive_12_month"], "MONTHLY_SEASONAL_BASELINE"
+        if cadence == "week" and n >= 104:
+            return self.models["seasonal_naive_52_week"], "WEEKLY_FORMAL_SEASONAL_BASELINE"
+        if n >= 4:
+            return self.models["rolling_mean_baseline"], "SHORT_SERIES_BASELINE_FALLBACK"
+        return self.models["last_value_baseline"], "VERY_SHORT_SERIES_LAST_VALUE_FALLBACK"
+
+
+class RecommendationProvider:
+    def __init__(self, conn: psycopg.Connection) -> None:
+        self.conn = conn
+
+    def approved_executable_kg_candidates(self, disease_slug: str, metric_code: str) -> list[dict[str, Any]]:
+        # Only pre-existing human-reviewed, eligible KG claims may participate.
+        # R4 machine candidates are explicitly excluded.
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """
+                select claim_id::text, canonical_key, subject_text, predicate_text, object_text,
+                       metric_name, forecast_horizon, properties
+                from epidemic_kg.kg_claims
+                where evidence_eligible=true and quarantine=false and review_status in ('APPROVED','REVIEWED_APPROVED','HUMAN_REVIEWED_APPROVED','VALIDATED')
+                  and coalesce(properties->>'paper1_participation','0') <> '1'
+                  and (
+                    lower(coalesce(subject_text,'')) like %s or
+                    lower(coalesce(object_text,'')) like %s
+                  )
+                  and lower(coalesce(metric_name,'')) like %s
+                limit 20
+                """,
+                (f"%{disease_slug.lower()}%", f"%{disease_slug.lower()}%", f"%{metric_code.lower()}%"),
+            )
+            return [
+                dict(
+                    zip(
+                        [
+                            "claim_id",
+                            "canonical_key",
+                            "subject_text",
+                            "predicate_text",
+                            "object_text",
+                            "metric_name",
+                            "forecast_horizon",
+                            "properties",
+                        ],
+                        r,
+                        strict=False,
+                    )
+                )
+                for r in cur.fetchall()
+            ]
+
+
+class StaticForecastGuidanceProvider:
+    """Turn the versioned static KG guidance graph into executable demo candidates.
+
+    This is intentionally narrow: only registered baseline adapters may execute in
+    UX3/R2 DEMO_SHADOW. Non-baseline KG recommendations are retained as rejected
+    candidate provenance until a real adapter contract exists.
+    """
+
+    BASELINE_RULE_TO_ADAPTER = {
+        "last_value_baseline": "last_value_baseline",
+        "moving_average_baseline": "rolling_mean_baseline",
+        "seasonal_baseline": "seasonal_naive_52_week",
+    }
+
+    def __init__(self) -> None:
+        self.graph = load_graph()
+        self.aliases = disease_alias_map(self.graph)
+
+    def disease_id(self, disease_slug: str) -> str:
+        return self.aliases.get(disease_slug.strip().lower(), disease_slug.strip().lower())
+
+    def applicable_rules(self, disease_slug: str, profile: dict[str, Any]) -> list[dict[str, Any]]:
+        disease_id = self.disease_id(disease_slug)
+        weeks = int(profile.get("observed_non_null_period_count") or 0)
+        matched: list[dict[str, Any]] = []
+        for rule in self.graph.get("rules", []):
+            disease_ids = set(rule.get("disease_ids", []))
+            if disease_id not in disease_ids and "*" not in disease_ids:
+                continue
+            when = rule.get("when", {})
+            if "history_weeks_min" in when and weeks < int(when["history_weeks_min"]):
+                continue
+            if "history_weeks_max_exclusive" in when and weeks >= int(when["history_weeks_max_exclusive"]):
+                continue
+            if when.get("is_event_series") is True:
+                continue
+            matched.append(rule)
+        matched.sort(key=lambda r: int(r.get("priority") or 0), reverse=True)
+        return matched
+
+    def candidates_for(self, disease_slug: str, cadence: str, profile: dict[str, Any]) -> dict[str, Any]:
+        rules = self.applicable_rules(disease_slug, profile)
+        adapter_sources: dict[str, list[dict[str, Any]]] = {}
+        non_executable: list[dict[str, Any]] = []
+        for rule in rules:
+            for rule_model in [*rule.get("required_baselines", []), *rule.get("recommend", [])]:
+                adapter = self.BASELINE_RULE_TO_ADAPTER.get(rule_model)
+                record = {
+                    "rule_id": rule["rule_id"],
+                    "rule_model": rule_model,
+                    "source_layer": "forecast_guidance",
+                    "evidence_ids": rule.get("evidence_ids", []),
+                    "priority": rule.get("priority"),
+                    "explanation_zh": rule.get("explanation_template_zh"),
+                    "explanation_en": rule.get("explanation_template_en"),
+                }
+                if adapter:
+                    if adapter == "seasonal_naive_52_week" and cadence != "week":
+                        non_executable.append({**record, "adapter_key": adapter, "rejection_reason": "CADENCE_MISMATCH"})
+                    else:
+                        adapter_sources.setdefault(adapter, []).append(record)
+                else:
+                    non_executable.append({**record, "adapter_key": None, "rejection_reason": "NO_UX3_R2_ADAPTER_CONTRACT"})
+        return {"rules": rules, "adapter_sources": adapter_sources, "non_executable": non_executable}
+
+
+class ParameterResolver:
+    def resolve(self, model: ModelSpec, profile: dict[str, Any], kg_candidates: list[dict[str, Any]]) -> dict[str, Any]:
+        if model.name == "rolling_mean_baseline":
+            window = min(4, max(1, int(profile.get("observed_non_null_period_count") or 1)))
+            return {"model_name": model.name, "params": {"window": window}, "source": "registered_model_default", "kg_candidate_count": len(kg_candidates)}
+        if model.name == "seasonal_naive_12_month":
+            return {"model_name": model.name, "params": {"season_lag": 12}, "source": "registered_model_default", "kg_candidate_count": len(kg_candidates)}
+        if model.name == "seasonal_naive_52_week":
+            return {"model_name": model.name, "params": {"season_lag": 52}, "source": "registered_model_default", "kg_candidate_count": len(kg_candidates)}
+        return {"model_name": model.name, "params": {}, "source": "registered_model_default", "kg_candidate_count": len(kg_candidates)}
+
+
+class ForecastOrchestrator:
+    def __init__(self, conn: psycopg.Connection, token_prefix: str = "r4") -> None:
+        self.conn = conn
+        self.token_prefix = token_prefix
+        self.registry = ModelRegistry()
+        self.provider = RecommendationProvider(conn)
+        self.guidance_provider = StaticForecastGuidanceProvider()
+        self.resolver = ParameterResolver()
+
+    def series(self, country: str, disease: str, cadence: str, metric: str) -> list[dict[str, Any]]:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """
+                select observation_id, period_start, period_end, value_numeric
+                from epidemic.training_observations_v1
+                where country_alpha3=%s and disease_slug=%s and granularity=%s and metric_code=%s
+                  and value_numeric is not null
+                order by period_start
+                """,
+                (country, disease, cadence, metric),
+            )
+            return [
+                dict(zip(["observation_id", "period_start", "period_end", "value"], r, strict=False))
+                for r in cur.fetchall()
+            ]
+
+    def profile(self, rows: list[dict[str, Any]], country: str, disease: str, cadence: str, metric: str) -> dict[str, Any]:
+        return {
+            "country_alpha3": country,
+            "disease_slug": disease,
+            "cadence": cadence,
+            "metric_code": metric,
+            "observed_non_null_period_count": len(rows),
+            "start": str(rows[0]["period_start"]) if rows else None,
+            "end": str(rows[-1]["period_start"]) if rows else None,
+            "data_through": str(rows[-1]["period_start"]) if rows else None,
+            "unique_period_count": len({r["period_start"] for r in rows}),
+        }
+
+    def dataset_sha256(self, rows: list[dict[str, Any]], country: str, disease: str, cadence: str, metric: str) -> str:
+        payload = []
+        for r in rows:
+            payload.append(
+                "|".join(
+                    [
+                        str(r["observation_id"]),
+                        country,
+                        disease,
+                        cadence,
+                        metric,
+                        str(r["period_start"]),
+                        str(r["period_end"]),
+                        str(r["value"]),
+                    ]
+                )
+            )
+        return sha_text("\n".join(payload) + "\n")
+
+    def _next_period(self, d: date, cadence: str) -> date:
+        if cadence == "week":
+            return d + timedelta(days=7)
+        if cadence == "month":
+            y, m = d.year + (1 if d.month == 12 else 0), 1 if d.month == 12 else d.month + 1
+            return date(y, m, 1)
+        return d
+
+    def _period_end(self, d: date, cadence: str) -> date:
+        if cadence == "week":
+            return d + timedelta(days=6)
+        if cadence == "month":
+            nxt = self._next_period(d, cadence)
+            return nxt - timedelta(days=1)
+        return d
+
+    def predict_value(self, history: list[dict[str, Any]], model: ModelSpec, params: dict[str, Any], target_index: int, horizon: int = 1) -> float | None:
+        vals = [float(r["value"]) for r in history if r.get("value") is not None]
+        if not vals:
+            return None
+        if model.name == "rolling_mean_baseline":
+            w = int(params.get("window") or 4)
+            return sum(vals[-w:]) / min(w, len(vals))
+        if model.name == "seasonal_naive_12_month" and len(vals) >= 12:
+            offset = 12 - ((max(1, horizon) - 1) % 12)
+            return vals[-offset]
+        if model.name == "seasonal_naive_52_week" and len(vals) >= 52:
+            offset = 52 - ((max(1, horizon) - 1) % 52)
+            return vals[-offset]
+        return vals[-1]
+
+    def candidate_models(self, profile: dict[str, Any]) -> list[tuple[ModelSpec, str]]:
+        n = int(profile.get("observed_non_null_period_count") or 0)
+        cadence = str(profile.get("cadence") or "")
+        candidates: list[tuple[ModelSpec, str]] = []
+        for spec in self.registry.models.values():
+            if spec.cadence not in {"any", cadence}:
+                continue
+            if n < spec.min_periods:
+                continue
+            candidates.append((spec, "ADMITTED_BY_REGISTRY_HISTORY_AND_CADENCE"))
+        if not candidates and n:
+            candidates.append((self.registry.models["last_value_baseline"], "ADMITTED_AS_FAIL_CLOSED_BASELINE"))
+        return candidates
+
+    def common_origin_indices(self, rows: list[dict[str, Any]], model: ModelSpec, horizons: list[int]) -> list[int]:
+        max_h = max(horizons)
+        last_origin = len(rows) - max_h
+        first_origin = max(model.min_periods, 1)
+        if last_origin < first_origin:
+            return []
+        origin_count = min(8, last_origin - first_origin + 1)
+        start = last_origin - origin_count + 1
+        return list(range(start, last_origin + 1))
+
+    def backtest_candidate(
+        self,
+        rows: list[dict[str, Any]],
+        model: ModelSpec,
+        params: dict[str, Any],
+        horizons: list[int] | None = None,
+    ) -> dict[str, Any]:
+        horizons = horizons or [1, 2, 3, 4]
+        origin_indices = self.common_origin_indices(rows, model, horizons)
+        by_fold: list[dict[str, Any]] = []
+        by_horizon: dict[int, dict[str, Any]] = {}
+        all_errors: list[float] = []
+        all_actual_sum = 0.0
+        for h in horizons:
+            errors: list[float] = []
+            actual_sum = 0.0
+            for i in origin_indices:
+                hist = rows[:i]
+                target = rows[i + h - 1]
+                yhat = self.predict_value(hist, model, params, i, h)
+                if yhat is None or target.get("value") is None:
+                    continue
+                actual = float(target["value"])
+                err = abs(float(yhat) - actual)
+                errors.append(err)
+                all_errors.append(err)
+                actual_sum += abs(actual)
+                all_actual_sum += abs(actual)
+                by_fold.append(
+                    {
+                        "origin": str(hist[-1]["period_start"]),
+                        "target_period_start": str(target["period_start"]),
+                        "target_period_end": str(target["period_end"]),
+                        "horizon": h,
+                        "yhat": float(yhat),
+                        "actual": actual,
+                        "absolute_error": err,
+                    }
+                )
+            by_horizon[h] = {
+                "horizon": h,
+                "fold_count": len(errors),
+                "mae": sum(errors) / len(errors) if errors else None,
+                "wape": sum(errors) / actual_sum if errors and actual_sum else None,
+            }
+        mae = sum(all_errors) / len(all_errors) if all_errors else None
+        wape = sum(all_errors) / all_actual_sum if all_errors and all_actual_sum else None
+        return {
+            "model_name": model.name,
+            "horizons": horizons,
+            "common_origin_count": len(origin_indices),
+            "fold_count": len({r["origin"] for r in by_fold}),
+            "metric_row_count": len(by_fold),
+            "mae": mae,
+            "wape": wape,
+            "by_horizon": by_horizon,
+            "by_fold": by_fold,
+        }
+
+    def run(self, country: str, disease: str, cadence: str, metric: str, mode: str = "SHADOW") -> dict[str, Any]:
+        rows = self.series(country, disease, cadence, metric)
+        profile = self.profile(rows, country, disease, cadence, metric)
+        if cadence not in {"week", "month"}:
+            return self.persist_decision(country, disease, cadence, metric, profile, "NOT_APPLICABLE", "NOT_ELIGIBLE_FOR_CONTINUOUS_POINT_FORECAST", [])
+        registry_model, registry_reason = self.registry.choose(profile)
+        dataset_sha = self.dataset_sha256(rows, country, disease, cadence, metric)
+        approved = self.provider.approved_executable_kg_candidates(disease, metric)
+        guidance = self.guidance_provider.candidates_for(disease, cadence, profile)
+        candidates = self.candidate_models(profile)
+        evaluated: list[dict[str, Any]] = []
+        for spec, admission_reason in candidates:
+            resolution_i = self.resolver.resolve(spec, profile, approved)
+            metrics_i = self.backtest_candidate(rows, spec, resolution_i["params"])
+            graph_sources = guidance["adapter_sources"].get(spec.name, [])
+            source_layer = "forecast_guidance" if graph_sources else "model_registry"
+            source_provider = "StaticForecastKnowledgeGraph" if graph_sources else "BaselineProvider"
+            evaluated.append(
+                {
+                    "candidate_id": stable_uuid("model-candidate", f"{country}:{disease}:{metric}:{spec.name}").hex,
+                    "model_name": spec.name,
+                    "source_provider": source_provider,
+                    "source_layer": source_layer,
+                    "source_rule_ids": [s["rule_id"] for s in graph_sources] or ["model_registry_min_history_and_cadence"],
+                    "source_evidence_ids": sorted({e for s in graph_sources for e in s.get("evidence_ids", [])}),
+                    "eligible_claim_ids": [c["claim_id"] for c in approved],
+                    "excluded_claim_ids_and_reason": [],
+                    "adapter_key": spec.name,
+                    "adapter_version": "r1.baseline.v1",
+                    "candidate_class": "BASELINE",
+                    "admission_status": "ADMITTED",
+                    "admission_reason": admission_reason,
+                    "admission_or_rejection_reason": admission_reason,
+                    "description_cn": spec.description_cn,
+                    "parameter_resolution": resolution_i,
+                    "backtest_metrics": {k: v for k, v in metrics_i.items() if k != "by_fold"},
+                    "folds": metrics_i["by_fold"],
+                    "actually_executed": True,
+                    "graph_derived": bool(graph_sources),
+                }
+            )
+        rejected = []
+        for item in guidance["non_executable"]:
+            rejected.append(
+                {
+                    "candidate_id": stable_uuid("graph-rejected-candidate", f"{country}:{disease}:{metric}:{item['rule_id']}:{item['rule_model']}").hex,
+                    "model_name": item["rule_model"],
+                    "candidate_class": "GRAPH_GUIDANCE",
+                    "source_provider": "StaticForecastKnowledgeGraph",
+                    "source_layer": "forecast_guidance",
+                    "source_rule_ids": [item["rule_id"]],
+                    "admission_status": "REJECTED",
+                    "rejection_reason": item["rejection_reason"],
+                    "actually_executed": False,
+                    "graph_derived": True,
+                }
+            )
+        for spec in self.registry.models.values():
+            if spec.name in {c["model_name"] for c in evaluated}:
+                continue
+            if spec.cadence not in {"any", cadence}:
+                rejected.append(
+                    {
+                        "candidate_id": stable_uuid("model-candidate", f"{country}:{disease}:{metric}:{spec.name}").hex,
+                        "model_name": spec.name,
+                        "candidate_class": "BASELINE",
+                        "admission_status": "REJECTED",
+                        "rejection_reason": "CADENCE_MISMATCH",
+                        "actually_executed": False,
+                    }
+                )
+            elif int(profile.get("observed_non_null_period_count") or 0) < spec.min_periods:
+                rejected.append(
+                    {
+                        "candidate_id": stable_uuid("model-candidate", f"{country}:{disease}:{metric}:{spec.name}").hex,
+                        "model_name": spec.name,
+                        "candidate_class": "BASELINE",
+                        "admission_status": "REJECTED",
+                        "rejection_reason": "INSUFFICIENT_HISTORY",
+                        "actually_executed": False,
+                    }
+                )
+        baseline = next((c for c in evaluated if c["model_name"] == "last_value_baseline"), None)
+        comparable = [c for c in evaluated if c["backtest_metrics"].get("wape") is not None]
+        best = min(comparable, key=lambda c: (c["backtest_metrics"]["wape"], c["model_name"])) if comparable else None
+        if baseline and best and baseline["backtest_metrics"].get("wape") is not None:
+            base_wape = float(baseline["backtest_metrics"]["wape"])
+            best_wape = float(best["backtest_metrics"]["wape"])
+            if best["model_name"] != baseline["model_name"] and base_wape > 0 and (base_wape - best_wape) / base_wape < 0.05:
+                champion_name = baseline["model_name"]
+                reason = "ML_NOT_BETTER_THAN_BASELINE"
+            elif best["model_name"] != baseline["model_name"]:
+                champion_name = best["model_name"]
+                reason = "BACKTEST_BEATS_BASELINE_GUARD"
+            else:
+                champion_name = baseline["model_name"]
+                reason = "BASELINE_CHAMPION_BY_BACKTEST"
+        elif best:
+            champion_name = best["model_name"]
+            reason = "ONLY_MODEL_WITH_BACKTEST_METRICS"
+        else:
+            champion_name = registry_model.name
+            reason = registry_reason
+        model = self.registry.models[champion_name]
+        resolution = self.resolver.resolve(model, profile, approved)
+        fallback_reason = None if approved else "NO_APPROVED_EXECUTABLE_KG_CANDIDATE_USING_REGISTERED_BASELINE"
+        idempotency_key = f"{self.token_prefix}:{country}:{disease}:{cadence}:{metric}:{mode}:{dataset_sha}:{model.name}"
+        run_id = stable_uuid("shadow-run", idempotency_key)
+        run_key = idempotency_key
+        data_through = rows[-1]["period_start"] if rows else None
+        trace = {
+            "recommendation_reason": reason,
+            "kg_approved_candidate_count": len(approved),
+            "approved_kg_candidate_count": len(approved),
+            "graph_rule_candidate_count": sum(len(v) for v in guidance["adapter_sources"].values()),
+            "advisory_rule_candidate_count": 0,
+            "baseline_candidate_count": len(evaluated),
+            "guidance_rules": guidance["rules"],
+            "candidate_models": evaluated,
+            "rejected_models": rejected,
+            "executed_candidate_count": len(evaluated),
+            "graph_derived_admitted_candidate_count": sum(1 for c in evaluated if c.get("graph_derived")),
+            "graph_derived_executed_candidate_count": sum(1 for c in evaluated if c.get("graph_derived") and c.get("actually_executed")),
+            "graph_derived_fold_prediction_count": sum(len(c.get("folds", [])) for c in evaluated if c.get("graph_derived") and c.get("actually_executed")),
+            "baseline_guard": {
+                "baseline_model": "last_value_baseline",
+                "champion_model": model.name,
+                "reason_code": reason,
+            },
+            "pending_machine_claim_participation_count": 0,
+            "mentions_only_participation_count": 0,
+            "quarantined_claim_participation_count": 0,
+            "paper1_participation_count": 0,
+            "parameter_resolution": resolution,
+            "fallback_reason": fallback_reason,
+            "global_104_hard_block": False,
+            "cdc_r4f_allowed": False,
+            "run_mode_semantics": "DEMO_SHADOW_NON_PUBLISHED_NO_PROMOTION",
+            "dataset_sha256": dataset_sha,
+            "horizon_set": [1, 2, 3, 4],
+            "selection_mode": "STATIC_KG_GUIDANCE_WITH_REGISTERED_BASELINE_ADAPTERS",
+        }
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """
+                insert into epidemic_kg.kg_forecast_shadow_runs
+                (run_id,run_key,idempotency_key,mode,status,disease_slug,country_alpha3,metric_code,cadence,data_through,model_name,fallback_reason,promotion_eligible,active_pointer_changed,trusted_rows_changed,profile,selection_trace)
+                values(%s,%s,%s,%s,'COMPLETE',%s,%s,%s,%s,%s,%s,%s,false,false,0,%s::jsonb,%s::jsonb)
+                on conflict(idempotency_key) do update set updated_at=now(), profile=excluded.profile, selection_trace=excluded.selection_trace
+                """,
+                (run_id, run_key, idempotency_key, mode, disease, country, metric, cadence, data_through, model.name, fallback_reason, json.dumps(profile), json.dumps(trace)),
+            )
+            # R1 rolling-origin backtest on common H1-H4 origins, plus four future complete periods.
+            generated = 0
+            champion = next((c for c in evaluated if c["model_name"] == model.name), None)
+            for fold in (champion or {}).get("folds", []):
+                target_start = date.fromisoformat(str(fold["target_period_start"]))
+                target_end = date.fromisoformat(str(fold["target_period_end"]))
+                self._insert_value(
+                    cur,
+                    run_id,
+                    target_start,
+                    target_end,
+                    int(fold["horizon"]),
+                    float(fold["yhat"]),
+                    fold["actual"],
+                    True,
+                    "BACKTEST",
+                    [],
+                )
+                generated += 1
+            future_start = rows[-1]["period_start"] if rows else date.today()
+            hist = rows[:]
+            for h in range(1, 5):
+                target_start = self._next_period(future_start, cadence)
+                future_start = target_start
+                yhat = self.predict_value(hist, model, resolution["params"], len(hist) + h, h)
+                if yhat is None:
+                    continue
+                self._insert_value(cur, run_id, target_start, self._period_end(target_start, cadence), h, yhat, None, False, "FUTURE", [])
+                generated += 1
+        return {"run_id": str(run_id), "run_key": run_key, "forecast_output_row_count": generated, "profile": profile, "trace": trace, "promotion_eligible": False, "active_pointer_changed": False}
+
+    def persist_decision(
+        self,
+        country: str,
+        disease: str,
+        cadence: str,
+        metric: str,
+        profile: dict[str, Any],
+        mode: str,
+        status: str,
+        outputs: list[Any],
+    ) -> dict[str, Any]:
+        idempotency_key = f"{self.token_prefix}:{country}:{disease}:{cadence}:{metric}:{mode}:decision"
+        run_id = stable_uuid("shadow-run", idempotency_key)
+        trace = {"decision": status, "continuous_series_fabricated": False, "global_104_hard_block": False}
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """
+                insert into epidemic_kg.kg_forecast_shadow_runs
+                (run_id,run_key,idempotency_key,mode,status,disease_slug,country_alpha3,metric_code,cadence,model_name,promotion_eligible,active_pointer_changed,trusted_rows_changed,profile,selection_trace)
+                values(%s,%s,%s,%s,%s,%s,%s,%s,%s,'not_applicable_decision',false,false,0,%s::jsonb,%s::jsonb)
+                on conflict(idempotency_key) do update set updated_at=now(), profile=excluded.profile, selection_trace=excluded.selection_trace
+                """,
+                (run_id, idempotency_key, idempotency_key, mode, status, disease, country, metric, cadence, json.dumps(profile), json.dumps(trace)),
+            )
+            value_id = stable_uuid("shadow-decision", idempotency_key)
+            cur.execute(
+                """
+                insert into epidemic_kg.kg_forecast_shadow_values
+                (value_id, run_id, horizon, row_type, is_observed, is_imputed, properties)
+                values(%s,%s,0,'SCENARIO_DECISION',false,false,%s::jsonb)
+                on conflict(value_id) do nothing
+                """,
+                (value_id, run_id, json.dumps(trace)),
+            )
+        return {"run_id": str(run_id), "forecast_output_row_count": 1, "profile": profile, "trace": trace, "promotion_eligible": False, "active_pointer_changed": False}
+
+    def _insert_value(
+        self,
+        cur: Any,
+        run_id: uuid.UUID,
+        start: date,
+        end: date,
+        horizon: int,
+        yhat: float,
+        actual: Any,
+        observed: bool,
+        row_type: str,
+        obs_ids: list[Any],
+    ) -> None:
+        lower = None
+        upper = None
+        key = f"{run_id}:{start}:{horizon}:{row_type}"
+        cur.execute(
+            """
+            insert into epidemic_kg.kg_forecast_shadow_values
+            (value_id,run_id,target_period_start,target_period_end,horizon,yhat,lower_value,upper_value,actual_value,is_observed,is_imputed,imputation_method,source_observation_ids,row_type,properties)
+            values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,false,null,%s,%s,%s::jsonb)
+            on conflict(run_id,target_period_start,horizon,row_type) do nothing
+            """,
+            (
+                stable_uuid("shadow-value", key),
+                run_id,
+                start,
+                end,
+                horizon,
+                yhat,
+                lower,
+                upper,
+                actual,
+                observed,
+                obs_ids,
+                row_type,
+                json.dumps(
+                    {
+                        "model_semantics": "baseline_no_training_no_promotion",
+                        "interval_status": "NOT_COMPUTED",
+                        "interval_method": "NONE_DEMO_SHADOW_R2",
+                        "fixed_percentage_heuristic_interval": False,
+                    }
+                ),
+            ),
+        )
+
+
+DISEASE_RE = re.compile(r"\b(covid|sars-cov-2|influenza|flu|dengue|ebola|legionella|legionellosis|hantavirus|puumala|nipah|mpox|monkeypox)\b", re.I)
+MODEL_RE = re.compile(r"\b(xgboost|lightgbm|random forest|lstm|gru|rnn|transformer|arima|sarima|seir|sir|agent[- ]based|bayesian|gaussian process|kalman|regression|baseline|neural network)\b", re.I)
+PARAM_RE = re.compile(r"\b(horizon|lag|window|learning rate|depth|estimators|hidden units|layers|seasonal period|serial interval|incubation period|r0)\b(?:\\s*(?:=|of|:)?\\s*([0-9]+(?:\\.[0-9]+)?))?", re.I)
+
+
+def extract_structured_candidate(text: str) -> dict[str, str] | None:
+    disease = DISEASE_RE.search(text)
+    model = MODEL_RE.search(text)
+    if not model:
+        return None
+    param = PARAM_RE.search(text)
+    if not disease and not param:
+        return None
+    return {
+        "disease_text": disease.group(0) if disease else "",
+        "model_text": model.group(0),
+        "parameter_name": param.group(1) if param else "",
+        "parameter_value": param.group(2) if param and param.lastindex and param.group(2) else "",
+    }

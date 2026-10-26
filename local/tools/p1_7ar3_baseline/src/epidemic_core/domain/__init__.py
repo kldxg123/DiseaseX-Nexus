@@ -1,0 +1,1 @@
+"""Strict domain transfer models."""

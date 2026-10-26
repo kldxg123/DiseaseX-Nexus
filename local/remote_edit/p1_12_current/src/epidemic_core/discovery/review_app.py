@@ -1,0 +1,1669 @@
+# ruff: noqa: E501
+from __future__ import annotations
+
+import csv
+import datetime as dt
+import hashlib
+import hmac
+import html
+import io
+import json
+import os
+import secrets
+import time
+import urllib.parse
+import uuid
+from collections import defaultdict, deque
+from collections.abc import AsyncIterator, Mapping
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Any
+
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from sqlalchemy import Engine, create_engine, text
+
+from epidemic_core.discovery.review_labels import (
+    FIELD_ZH,
+    LABEL_VERSION,
+    LABELS,
+    MODEL_FIELDS,
+    REASON_ZH,
+    STATE_ZH,
+    TRANSFORM_ZH,
+)
+from epidemic_core.ebola.review_app import install_routes as install_p1_11_routes
+from epidemic_core.p1_9.review_app import install_routes as install_p1_9_routes
+from epidemic_core.p1_10.diagnostics import readiness, request_id, unexpected_error
+from epidemic_core.p1_10.review_app import install_routes as install_p1_10_routes
+from epidemic_core.p1_12.review_app import install_routes as install_p1_12_routes
+
+COOKIE = "epidemic_source_review"
+IDLE_SECONDS = 1_800
+ABSOLUTE_SECONDS = 28_800
+ORIGIN = os.environ.get("REVIEW_PUBLIC_ORIGIN", "http://127.0.0.1:8121")
+STATIC_VERSION = "p1-7ar3-v1"
+TERMINAL_STATES = {
+    "REVIEW_READY",
+    "NO_CANDIDATE",
+    "DUPLICATE_ONLY",
+    "POLICY_BLOCKED",
+    "SECURITY_BLOCKED",
+    "LICENSE_BLOCKED",
+    "UNSUPPORTED_FORMAT",
+    "INVALID_REQUEST",
+    "FAILED_TERMINAL",
+    "DISCOVERY_COMPLETE_NO_CANDIDATE",
+    "DISCOVERY_PARTIAL_FREE_PROVIDER_UNAVAILABLE",
+    "PROVIDER_DEGRADED",
+}
+
+
+class Sessions:
+    def __init__(self) -> None:
+        self.rows: dict[str, tuple[float, float, str, str]] = {}
+        self.failures: defaultdict[str, deque[float]] = defaultdict(deque)
+        self.locked_until: dict[str, float] = {}
+
+    def create(self, username: str) -> str:
+        token, now = secrets.token_urlsafe(32), time.time()
+        self.rows[token] = (now, now, username, secrets.token_urlsafe(32))
+        return token
+
+    def get(self, token: str | None) -> tuple[str, str] | None:
+        if not token or token not in self.rows:
+            return None
+        made, last, username, csrf = self.rows[token]
+        now = time.time()
+        if now - last > IDLE_SECONDS or now - made > ABSOLUTE_SECONDS:
+            self.rows.pop(token, None)
+            return None
+        self.rows[token] = (made, now, username, csrf)
+        return username, csrf
+
+    def allowed(self, key: str) -> bool:
+        return self.locked_until.get(key, 0) <= time.time()
+
+    def failed(self, key: str) -> None:
+        now = time.time()
+        events = self.failures[key]
+        while events and events[0] < now - 600:
+            events.popleft()
+        events.append(now)
+        if len(events) >= 5:
+            self.locked_until[key] = now + 300
+
+    def succeeded(self, key: str) -> None:
+        self.failures.pop(key, None)
+        self.locked_until.pop(key, None)
+
+
+def _auth(path: Path, username: str, password: str) -> bool:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    actual = hashlib.scrypt(
+        password.encode(), salt=bytes.fromhex(value["salt_hex"]), n=value["n"], r=value["r"], p=value["p"], dklen=32
+    )
+    return hmac.compare_digest(username, value["username"]) and hmac.compare_digest(actual.hex(), value["hash_hex"])
+
+
+def _rows(engine: Engine, sql: str, params: Mapping[str, Any] | None = None) -> list[dict[str, Any]]:
+    with engine.connect() as connection:
+        return [dict(row) for row in connection.execute(text(sql), dict(params or {})).mappings()]
+
+
+def _e(value: object) -> str:
+    return html.escape(str(value if value is not None else "缺失"), quote=True)
+
+
+def _jsonable(value: object) -> Any:
+    return json.loads(json.dumps(value, ensure_ascii=False, default=str))
+
+
+def _plain_candidate_summary(card: Mapping[str, Any], preview: list[dict[str, Any]]) -> str:
+    metrics = sorted({str(row.get("metric_code") or row.get("standard_metric") or "尚未确认") for row in preview[:200]})
+    units = sorted({str(row.get("unit") or row.get("standard_unit") or "尚未确认") for row in preview[:200]})
+    countries = sorted({str(row.get("country_iso3") or row.get("country") or card.get("country_iso3") or "尚未确认") for row in preview[:200]})
+    dates = [
+        str(row.get("period_end") or row.get("reporting_date") or row.get("source_as_of_date"))
+        for row in preview[:200]
+        if row.get("period_end") or row.get("reporting_date") or row.get("source_as_of_date")
+    ]
+    date_range = f"{min(dates)} 至 {max(dates)}" if dates else "尚未确认"
+    reason_values = card.get("eligibility_reasons") or card.get("reason_codes") or []
+    if isinstance(reason_values, str):
+        reason_values = [reason_values]
+    reason_text = "、".join(REASON_ZH.get(str(item), str(item)) for item in reason_values) or "补充官方来源、覆盖范围或指标证据"
+    warnings = card.get("quality_json") or card.get("security_json") or {}
+    warning_text = "；".join(f"{key}={value}" for key, value in list(warnings.items())[:4]) if isinstance(warnings, dict) else str(warnings or "尚未确认")
+    return (
+        "<section id='source-summary-card' class='conclusion' data-pending-not-trusted='true'><h2>待人工复核，尚未进入 Trusted</h2>"
+        "<p>本页只展示隔离 Candidate Preview；GET 页面不会创建 Review Decision、不会 Promotion，也不会写入 Trusted Dashboard。</p>"
+        "<div class='summary-grid'>"
+        f"<div class='stat'><strong>发布机构</strong><span>{_e(card.get('publisher'))}</span></div>"
+        f"<div class='stat'><strong>数据集</strong><span>{_e(card.get('dataset_name') or card.get('source_name'))}</span></div>"
+        f"<div class='stat'><strong>官方域名</strong><span>{_e(card.get('official_domain') or card.get('domain'))}</span></div>"
+        f"<div class='stat'><strong>国家/地区</strong><span>{_e('、'.join(countries))}</span></div>"
+        f"<div class='stat'><strong>时间范围</strong><span>{_e(date_range)}</span></div>"
+        f"<div class='stat'><strong>记录数</strong><span>{_e(card.get('candidate_preview_row_count') or card.get('row_count'))}</span></div>"
+        "</div>"
+        f"<p><b>数据源提供了什么：</b>格式 {_e(card.get('format') or card.get('content_type'))}，指标 {_e('、'.join(metrics[:8]))}，单位 {_e('、'.join(units[:6]))}。</p>"
+        f"<p><b>为什么进入复核：</b>{_e(reason_text)}。</p>"
+        f"<p><b>需要人工确认：</b>病例分类、累计/新增口径、日期语义、许可状态与解析 warning。{_e(warning_text)}</p>"
+        "</section>"
+    )
+
+
+def _review_overview(engine: Engine) -> str:
+    """Read-only overview for Ebola source review candidates."""
+    observed_at = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    try:
+        all_cards = _rows(engine, "SELECT * FROM epidemic_discovery.review_candidate_cards_v2 ORDER BY review_case_id")
+    except Exception:
+        all_cards = []
+    ebola_cards = [
+        row
+        for row in all_cards
+        if "ebola" in str((row.get("metadata") or {}).get("disease_name") or row.get("dataset_name") or "").casefold()
+        or "ebola" in str(row.get("dataset_name") or "").casefold()
+    ]
+    try:
+        leads = _rows(
+            engine,
+            "SELECT provider_id,domain,publisher,title,canonical_url,landing_page_url,disposition "
+            "FROM epidemic_discovery.source_discovery_search_results "
+            "WHERE provider_id='cdc-stacks-direct' OR domain='stacks.cdc.gov' "
+            "ORDER BY observed_at DESC LIMIT 20",
+        )
+    except Exception:
+        leads = []
+    try:
+        trusted = _rows(
+            engine,
+            "SELECT source_key,metric_code,period_end,value_numeric "
+            "FROM epidemic_p1_12.trusted_dashboard_series_v1 WHERE disease_id='ebola-disease'",
+        )
+    except Exception:
+        trusted = []
+    status_counts: dict[str, int] = {}
+    countries: set[str] = set()
+    metrics: set[str] = set()
+    warnings: set[str] = set()
+    date_min: list[str] = []
+    date_max: list[str] = []
+    preview_rows = 0
+    for row in ebola_cards:
+        status = str(row.get("effective_status") or "UNKNOWN")
+        status_counts[status] = status_counts.get(status, 0) + 1
+        preview_rows += int(row.get("row_count") or 0)
+        metadata = row.get("metadata") or {}
+        qualification = metadata.get("qualification") or {}
+        countries.add(str(metadata.get("country_iso3") or metadata.get("country_name") or "尚未确认"))
+        metrics.update(str(value) for value in (qualification.get("metric_fields") or {}).values())
+        if qualification.get("date_min"):
+            date_min.append(str(qualification["date_min"]))
+        if qualification.get("date_max"):
+            date_max.append(str(qualification["date_max"]))
+        warnings.update(str(item) for item in (row.get("risk_flags") or []))
+        warnings.update(str(item) for item in (metadata.get("warnings") or []))
+    trusted_dates = sorted(str(row.get("period_end")) for row in trusted if row.get("period_end"))
+    trusted_text = (
+        f"当前 Trusted 基线包含 {len(trusted)} 条 Ebola 正式观测，日期为 {trusted_dates[0]} 至 {trusted_dates[-1]}。"
+        if trusted_dates
+        else "当前 Trusted 基线读取受限或没有可显示的 Ebola 正式观测。"
+    )
+    if ebola_cards:
+        summary = (
+            f"截至 {observed_at}，当前复核队列包含 {len(ebola_cards)} 个 Ebola 候选，"
+            f"对应 {len({str(row.get('publisher')) for row in ebola_cards})} 个来源和 {preview_rows} 条候选预览记录，"
+            f"覆盖 {', '.join(sorted(countries)) if countries else '尚未确认'}，"
+            f"日期 {min(date_min) if date_min else '尚未确认'} 至 {max(date_max) if date_max else '尚未确认'}。"
+            "这些内容仅处于 Candidate/Review 层，尚未人工批准、未 Promotion、未进入 Trusted。"
+        )
+    else:
+        summary = (
+            "当前复核聚焦 Ebola 历史数据扩充。系统已完成官方来源线索的真实性检查，"
+            "但目前尚未确认能够稳定通过正式 v2 gate、提供可复现行级定位并生成 Candidate Preview 的历史来源，"
+            "因此当前历史候选和候选预览记录均为 0。现有 2026 年 Ebola Trusted 数据仅作为正式数据背景和重复检测基线，"
+            "不计入本轮待复核获取结果。本轮没有历史数据被批准、Promotion 或写入 Trusted。"
+        )
+    acquired = [
+        f"已验证官方归档线索数：{len(leads)}",
+        f"Candidate 数：{len(ebola_cards)}",
+        f"Candidate Preview 记录数：{preview_rows}",
+        f"Review case 数：{len(ebola_cards)}",
+        "本轮进入 Trusted 的历史记录数：0",
+    ]
+    pending = sorted(warnings) or [
+        "license 状态尚未确认",
+        "日期语义和病例分类仍需人工复核",
+        "regional 与国家记录重复风险需人工确认",
+        "Preview-only v2 gate 完整写入路径仍需修复",
+    ]
+    status_items = "".join(f"<li>{_e(key)}：{value}</li>" for key, value in sorted(status_counts.items())) or "<li>尚无历史 Candidate</li>"
+    lead_items = "".join(
+        f"<li>{_e(row.get('publisher') or 'UNKNOWN')} · {_e(row.get('title') or row.get('canonical_url'))}</li>"
+        for row in leads[:5]
+    ) or "<li>当前 Review 角色无法读取 Discovery Lead，或暂无已登记 lead。</li>"
+    return (
+        "<section id='review-overview' class='conclusion' data-pending-not-trusted='true'>"
+        "<h2>当前复核候选概况</h2>"
+        "<p><strong>当前为候选复核阶段，尚未进入 Trusted。</strong></p>"
+        f"<p>{_e(summary)}</p><p>{_e(trusted_text)}这些既有正式数据不是本轮新增历史候选。</p>"
+        "<div class='summary-grid'>"
+        f"<div><h3>当前已经取得</h3><ul>{''.join(f'<li>{_e(item)}</li>' for item in acquired)}</ul></div>"
+        f"<div><h3>仍需确认或尚未取得</h3><ul>{''.join(f'<li>{_e(item)}</li>' for item in pending)}</ul></div>"
+        f"<div><h3>状态分布</h3><ul>{status_items}</ul></div>"
+        f"<div><h3>Discovery Lead 与 Candidate 分离</h3><ul>{lead_items}</ul></div>"
+        "</div>"
+        "<p>数据层图例：Discovery Lead 只表示来源线索；Candidate Preview 表示已解析候选预览；Review Ready 不等于人工批准；Approved 仅来自真实人工决定；Trusted 仅来自真实 Promotion。</p>"
+        "</section>"
+    )
+
+
+def _layout(title: str, body: str, csrf: str = "") -> str:
+    return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{_e(csrf)}"><meta name="review-label-version" content="{LABEL_VERSION}"><title>{_e(title)}</title><link rel="stylesheet" href="/static/review.{STATIC_VERSION}.css"></head><body><header><div><h1>疫情数据源复核台</h1><p>隔离发现与人工复核；不属于正式疫情数据库。</p></div><form method="post" action="/logout"><button type="submit">退出</button></form></header><nav aria-label="主导航"><a href="/discoveries">发现与任务进度</a><a href="/reviews">待复核候选</a><a href="/p1-10/reviews">候选演示 Preview</a><a href="/history">审核历史</a><a href="/daily-updates">每日自动更新</a></nav><main>{body}</main><script src="/static/review.{STATIC_VERSION}.js" defer></script></body></html>"""
+
+
+def _login(error: str = "") -> str:
+    return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>数据源复核登录</title><link rel="stylesheet" href="/static/review.{STATIC_VERSION}.css"></head><body class="login-page"><main class="login-card"><h1>数据源复核登录</h1><p>请输入独立 reviewer 凭据。</p>{error}<form method="post" action="/login"><label for="username">用户名</label><input id="username" name="username" autocomplete="username" required><label for="password">密码</label><input id="password" name="password" type="password" autocomplete="current-password" required><button>登录</button></form></main></body></html>"""
+
+
+def _label(code: str) -> tuple[str, str, str, str]:
+    return LABELS.get(code, (code, "尚未登记中文解释。", "需要人工理解其影响。", "查看技术证据并补充说明。"))
+
+
+def _state(code: str) -> str:
+    return STATE_ZH.get(code, code)
+
+
+def _elapsed(seconds: object) -> str:
+    value = int(str(seconds or 0))
+    if value < 60:
+        return f"{value} 秒"
+    if value < 3600:
+        return f"{value // 60} 分 {value % 60} 秒"
+    return f"{value // 3600} 小时 {(value % 3600) // 60} 分"
+
+
+def _candidate_text(row: Mapping[str, Any]) -> str:
+    state, count = str(row["state"]), int(row.get("candidate_count") or 0)
+    if state == "QUEUED":
+        return "任务仍在排队，尚未开始检索"
+    if state == "DISCOVERING":
+        return f"检索仍在进行；当前有 {count} 个候选"
+    if state == "PROFILING":
+        return f"正在安全分析 {count} 个候选"
+    if state == "REVIEW_READY":
+        return f"找到 {count} 个待复核候选"
+    if state == "DISCOVERY_COMPLETE_NO_CANDIDATE":
+        return "检索渠道已完成；本轮没有产生合格候选，但不代表不存在数据源。"
+    if state in {"DISCOVERY_PARTIAL_FREE_PROVIDER_UNAVAILABLE", "PROVIDER_DEGRADED"}:
+        return "部分检索渠道降级；保留已完成渠道结果，不作数据源不存在的判断。"
+    if state == "NO_CANDIDATE":
+        if row.get("terminal_reason_code") == "NO_CANDIDATE_COMPLETE":
+            return "完整检索后未找到候选"
+        return "检索覆盖不完整，不能判断是否没有数据源"
+    if row.get("terminal_reason_code") in {
+        "GENERIC_SEARCH_PROVIDER_UNCONFIGURED",
+        "BLOCKED_GENERIC_SEARCH_CONFIGURATION",
+        "DISCOVERY_INCOMPLETE",
+    }:
+        return "检索覆盖不完整，不能判断是否没有数据源"
+    return f"当前记录 {count} 个候选"
+
+
+def _run_progress(row: Mapping[str, Any]) -> str:
+    progress = row.get("progress_json") or {}
+    return (
+        f"计划 {progress.get('planned_queries', progress.get('queries', 0))}；"
+        f"真实请求 {progress.get('network_requests', 0)}；"
+        f"成功响应 {progress.get('successful_responses', 0)}；"
+        f"原始 {progress.get('raw_results', 0)}；"
+        f"合格 {progress.get('qualified_candidates', progress.get('qualified', 0))}"
+    )
+
+
+def _worker_message(row: Mapping[str, Any]) -> str:
+    if row.get("worker_healthy"):
+        return "后台检索服务正常"
+    if row["state"] == "QUEUED" and int(row.get("elapsed_seconds") or 0) > 60:
+        return "后台检索服务没有领取任务"
+    return "当前没有有效 Worker 心跳"
+
+
+def _conclusion(row: Mapping[str, Any]) -> str:
+    state = str(row["state"])
+    reason = str(row.get("terminal_reason_code") or "")
+    count = int(row.get("candidate_count") or 0)
+    if state == "REVIEW_READY":
+        return f"找到 {count} 个待复核候选"
+    if state == "DISCOVERY_COMPLETE_NO_CANDIDATE":
+        return "检索完成，未产生候选"
+    if state == "DISCOVERY_PARTIAL_FREE_PROVIDER_UNAVAILABLE":
+        return "官方渠道完成，免费搜索降级"
+    if state == "PROVIDER_DEGRADED":
+        return "部分 Provider 降级"
+    if reason == "NO_CANDIDATE_COMPLETE":
+        return "完整检索后未找到候选"
+    if reason in {"GENERIC_SEARCH_PROVIDER_UNCONFIGURED", "BLOCKED_GENERIC_SEARCH_CONFIGURATION"}:
+        return "系统缺少搜索 Provider 配置"
+    if reason == "DISCOVERY_INCOMPLETE":
+        return "检索覆盖不完整，不能判断是否没有数据源"
+    if state in {"SECURITY_BLOCKED", "FAILED_TERMINAL", "FAILED_RETRYABLE"}:
+        return "网络或安全策略失败"
+    if state in {"QUEUED", "DISCOVERING", "CANDIDATES_FOUND", "PROFILING"}:
+        return "任务仍在执行"
+    return "检索覆盖不完整，不能判断是否没有数据源"
+
+
+def _coverage_table(events: list[dict[str, Any]]) -> str:
+    rows: list[str] = []
+    for event_row in events:
+        code = str(event_row["event_code"])
+        details = event_row.get("details") or {}
+        if code == "SOURCE_DIRECTORY_CHECKED":
+            rows.append(
+                "<tr>"
+                f"<td>{_e(details.get('label_zh') or details.get('strategy') or '本地策略')}</td>"
+                "<td>本地适配器/协议检查</td><td>—</td><td>—</td><td>未真正发起</td><td>—</td><td>0</td>"
+                "<td>未配置</td><td>历史事件只检查了本地策略名，没有访问具体目录。</td><td>是</td>"
+                "</tr>"
+            )
+        elif code in {
+            "DIRECTORY_CAPABILITY_EVALUATED",
+            "DIRECTORY_REQUEST_AUDIT",
+            "PROVIDER_REQUEST_AUDIT",
+            "PROVIDER_CONFIGURATION_MISSING",
+            "PROVIDER_REQUEST_NOT_EXECUTED",
+        }:
+            network = bool(details.get("network_request"))
+            http = details.get("http_status")
+            elapsed = details.get("elapsed_ms")
+            result = str(details.get("result") or details.get("health_status") or "未执行")
+            reason = str(
+                details.get("reason_code")
+                or details.get("unavailable_reason")
+                or ("请求成功" if http == 200 else "未发起真实请求")
+            )
+            rows.append(
+                "<tr>"
+                f"<td>{_e(details.get('directory_name') or details.get('name') or details.get('provider_id'))}</td>"
+                f"<td>{_e(details.get('scope') or details.get('source_tier') or '通用')}</td>"
+                f"<td>{_e(details.get('domain') or '—')}</td>"
+                f"<td>{_e(details.get('query_summary') or '—')}</td>"
+                f"<td>{'是' if network else '否'}</td>"
+                f"<td>{_e(str(http) if http is not None else '—')} / {_e(str(elapsed) + ' ms' if elapsed is not None else '—')}</td>"
+                f"<td>{_e(details.get('result_count') or 0)}</td>"
+                f"<td>{_e(result)}</td><td>{_e(reason)}</td>"
+                f"<td>{'是' if details.get('affects_completeness') or details.get('required_channel') else '否'}</td>"
+                "</tr>"
+            )
+    if not rows:
+        rows.append('<tr><td colspan="10">尚无 Provider 或目录执行证据。</td></tr>')
+    return (
+        '<div class="table-box"><table class="coverage"><caption>每行对应一个真实 Provider、目录或历史本地策略检查</caption>'
+        "<thead><tr><th>名称</th><th>范围</th><th>访问域名</th><th>查询摘要</th><th>真实网络请求</th><th>HTTP / 耗时</th>"
+        "<th>结果数</th><th>结果</th><th>中文原因</th><th>影响完整性</th></tr></thead><tbody>"
+        + "".join(rows)
+        + "</tbody></table></div>"
+    )
+
+
+def _technical_table(value: object, caption: str) -> str:
+    if not isinstance(value, dict):
+        return f"<p>{_e(value)}</p>"
+    rows = "".join(
+        f'<tr><th scope="row">{_e(key)}</th><td>{_display_value(item)}</td></tr>'
+        for key, item in list(value.items())[:40]
+    )
+    return f'<div class="table-box"><table class="compact"><caption>{_e(caption)}</caption><thead><tr><th scope="col">键</th><th scope="col">值</th></tr></thead><tbody>{rows}</tbody></table></div>'
+
+
+def _display_value(value: object) -> str:
+    if value is None or value == "":
+        return '<span class="value-null">缺失</span>'
+    if value in (0, "0", 0.0, "0.0"):
+        return '<span class="value-zero">0</span>'
+    if isinstance(value, (dict, list)):
+        size = len(value)
+        if isinstance(value, dict):
+            inner = "".join(
+                f'<tr><th scope="row">{_e(key)}</th><td>{_display_value(item)}</td></tr>'
+                for key, item in list(value.items())[:20]
+            )
+        else:
+            inner = "".join(
+                f'<tr><th scope="row">{index + 1}</th><td>{_display_value(item)}</td></tr>'
+                for index, item in enumerate(value[:20])
+            )
+        return f'<details><summary>结构化字段（{size} 项）</summary><table class="nested"><tbody>{inner}</tbody></table></details>'
+    text_value = str(value)
+    try:
+        if float(text_value) < 0:
+            return f'<span class="value-negative">{_e(text_value)}（负值/修订待确认）</span>'
+    except ValueError:
+        pass
+    if len(text_value) > 80:
+        return f"<details><summary>{_e(text_value[:60])}…</summary><p>{_e(text_value)}</p></details>"
+    return _e(text_value)
+
+
+def _get(mapping: Mapping[str, Any], *names: str) -> object:
+    for name in names:
+        if name in mapping:
+            return mapping[name]
+    return None
+
+
+def _preview_values(row: Mapping[str, Any]) -> dict[str, tuple[object, object]]:
+    raw = row.get("raw_json") or {}
+    clean = row.get("sanitized_json") or {}
+    return {
+        "period": (_get(raw, "data_iniSE", "SE", "data"), _get(clean, "data_iniSE", "SE", "data")),
+        "geography": (
+            _get(raw, "cidade", "Localidade_id", "geocode"),
+            _get(clean, "cidade", "Localidade_id", "geocode"),
+        ),
+        "cases": (_get(raw, "casos", "cases"), _get(clean, "casos", "cases")),
+        "deaths": (_get(raw, "obitos", "deaths"), _get(clean, "obitos", "deaths")),
+        "unit": (_get(raw, "unidade", "unit") or "count", _get(clean, "unidade", "unit") or "count"),
+    }
+
+
+def _comparison(raw: object, clean: object, mode: str) -> str:
+    if mode == "raw":
+        return _display_value(raw)
+    if mode == "clean":
+        return _display_value(clean)
+    changed = raw != clean
+    return f'<div class="compare"><span><small>原始值</small>{_display_value(raw)}</span><span><small>清洗值</small>{_display_value(clean)}</span><span class="change-{str(changed).lower()}">{"已变化" if changed else "未变化"}</span></div>'
+
+
+def _check_row(item: str, result: str, meaning: str, evidence: object, action: str) -> str:
+    return f'<tr class="check-{_e(result)}"><th scope="row">{_e(item)}</th><td>{_e({"pass": "通过", "warn": "警告", "block": "阻断", "unknown": "未知"}.get(result, result))}</td><td>{_e(meaning)}</td><td>{_display_value(evidence)}</td><td>{_e(action)}</td></tr>'
+
+
+def _generic_review_page(
+    engine: Engine,
+    card: Mapping[str, Any],
+    case_id: uuid.UUID,
+    csrf: str,
+    *,
+    preview_page: int,
+    page_size: int,
+    date_filter: str,
+    geo_filter: str,
+    indicator_filter: str,
+    quality_filter: str,
+    sort: str,
+    notice: str,
+) -> HTMLResponse:
+    metadata = dict(card.get("metadata") or {})
+    qualification = dict(metadata.get("qualification") or {})
+    run_rows = _rows(
+        engine,
+        "SELECT discovery_run_id AS id,state,request_json,progress_json,created_at,updated_at,completed_at FROM epidemic_discovery.review_discovery_runs_v2 WHERE discovery_run_id=:id",
+        {"id": card["discovery_run_id"]},
+    )
+    run = run_rows[0] if run_rows else {"request_json": {}, "progress_json": {}}
+    request_json = dict(run.get("request_json") or {})
+    progress = dict(run.get("progress_json") or {})
+    fields = _rows(
+        engine,
+        "SELECT * FROM epidemic_discovery.review_field_mapping_v2 WHERE review_case_id=:id ORDER BY ordinal",
+        {"id": case_id},
+    )
+    preview = _rows(
+        engine,
+        "SELECT sample_kind,row_ordinal,sanitized_json,row_errors,row_sha256 FROM epidemic_discovery.review_preview_v WHERE review_case_id=:id ORDER BY row_ordinal",
+        {"id": case_id},
+    )
+    time_fields = [str(item) for item in qualification.get("time_fields", [])]
+    geography_fields = [str(item) for item in qualification.get("geography_fields", [])]
+    metric_fields = dict(qualification.get("metric_fields") or {})
+    if date_filter:
+        preview = [
+            row
+            for row in preview
+            if any(
+                date_filter.casefold() in str((row.get("sanitized_json") or {}).get(field, "")).casefold()
+                for field in time_fields
+            )
+        ]
+    if geo_filter:
+        preview = [
+            row
+            for row in preview
+            if any(
+                geo_filter.casefold() in str((row.get("sanitized_json") or {}).get(field, "")).casefold()
+                for field in geography_fields
+            )
+        ]
+    if quality_filter == "errors":
+        preview = [row for row in preview if row.get("row_errors")]
+    preview.sort(key=lambda row: int(row["row_ordinal"]), reverse=sort == "desc")
+    page_size = page_size if page_size in {20, 50, 100} else 20
+    total = len(preview)
+    pages = max(1, (total + page_size - 1) // page_size)
+    preview_page = min(max(1, preview_page), pages)
+    visible = preview[(preview_page - 1) * page_size : preview_page * page_size]
+    all_headers = [str(item["source_field"]) for item in fields]
+    if not all_headers and preview:
+        all_headers = [str(key) for key in (preview[0].get("sanitized_json") or {})]
+    display_headers = all_headers
+    if indicator_filter:
+        selected = [header for header in all_headers if indicator_filter.casefold() in header.casefold()]
+        display_headers = list(dict.fromkeys(time_fields + geography_fields + selected)) or all_headers
+    header_html = "".join(f'<th scope="col">{_e(header)}</th>' for header in display_headers)
+    body_rows = ""
+    for row in visible:
+        values = row.get("sanitized_json") or {}
+        cells = "".join(f"<td>{_display_value(values.get(header))}</td>" for header in display_headers)
+        body_rows += f'<tr data-row-ordinal="{_e(row["row_ordinal"])}">{cells}</tr>'
+    if not body_rows:
+        body_rows = f'<tr><td colspan="{max(1, len(display_headers))}">无记录</td></tr>'
+    mapping_rows = "".join(
+        f'<tr><th scope="row">{_e(item["source_field"])}</th><td>{_display_value(item.get("example_value"))}</td>'
+        f"<td>{_e(FIELD_ZH.get(str(item['source_field']), '待人工确认'))}</td><td>{_e(item.get('inferred_type'))}</td>"
+        f"<td>{_e(item.get('canonical_field') or item.get('metric_code') or '不进入正式数据')}</td>"
+        f"<td>{_e(item.get('transform') or 'identity')}</td><td>{_e(item.get('null_count') or 0)}</td>"
+        f"<td>建议映射</td><td>{_e(item.get('warning') or '人工复核后方可采用')}</td></tr>"
+        for item in fields
+    )
+    fetches = _rows(
+        engine,
+        "SELECT * FROM epidemic_discovery.review_candidate_fetches_v1 WHERE discovery_run_id=:run AND artifact_sha256=:artifact ORDER BY attempted_at",
+        {"run": card["discovery_run_id"], "artifact": card["artifact_sha256"]},
+    )
+    fetch = fetches[-1] if fetches else {}
+    search_rows = _rows(
+        engine,
+        "SELECT s.* FROM epidemic_discovery.review_discovery_search_results_v1 s JOIN epidemic_discovery.review_candidate_fetches_v1 f ON f.search_result_id=s.search_result_id WHERE f.discovery_run_id=:run AND f.artifact_sha256=:artifact ORDER BY s.observed_at",
+        {"run": card["discovery_run_id"], "artifact": card["artifact_sha256"]},
+    )
+    search = search_rows[-1] if search_rows else {}
+    requested_metrics = [str(item) for item in request_json.get("desired_metrics", [])]
+    actual_metrics = sorted(set(str(item) for item in metric_fields.values()))
+    metric_match = "EXACT_MATCH" if set(requested_metrics) == set(actual_metrics) else "PARTIAL_MATCH"
+    comparison = (
+        (
+            "国家/地区",
+            request_json.get("country_iso3"),
+            metadata.get("country_name") or metadata.get("country_iso3"),
+            "EXACT_MATCH",
+        ),
+        ("病种", "COVID-19", metadata.get("disease_name"), "EXACT_MATCH"),
+        (
+            "时间范围",
+            request_json.get("time_window_kind"),
+            f"{qualification.get('date_min', '—')} 至 {qualification.get('date_max', '—')}",
+            "PARTIAL_MATCH",
+        ),
+        ("指标", "、".join(requested_metrics), "、".join(actual_metrics), metric_match),
+        (
+            "来源层级",
+            "、".join(request_json.get("preferred_source_tiers", [])),
+            card.get("source_tier"),
+            "PARTIAL_MATCH",
+        ),
+    )
+    comparison_rows = "".join(
+        f'<tr><th scope="row">{_e(name)}</th><td>{_e(expected)}</td><td>{_e(actual)}</td><td>{_e(match)}</td></tr>'
+        for name, expected, actual, match in comparison
+    )
+    funnel_keys = (
+        ("planned_queries", "计划查询"),
+        ("executed_queries", "已执行查询"),
+        ("provider_successes", "Provider 成功"),
+        ("provider_degraded_or_failed", "Provider 降级/失败"),
+        ("raw_results", "原始结果"),
+        ("deduplicated_results", "去重 URL"),
+        ("fetch_attempts", "抓取尝试"),
+        ("fetch_successes", "抓取成功"),
+        ("artifacts", "Artifact"),
+        ("parsed_tables", "解析表"),
+        ("preview_rows", "预览行"),
+        ("qualified_candidates", "合格候选"),
+        ("duplicate_results", "重复结果"),
+        ("blockers", "阻断项"),
+    )
+    funnel = "".join(
+        f'<div class="stat"><strong>{_e(label)}</strong><span>{_e(progress.get(key, 0))}</span></div>'
+        for key, label in funnel_keys
+    )
+    overview = (
+        ("数据集", card.get("dataset_name")),
+        ("发布机构", card.get("publisher")),
+        ("来源域名", search.get("domain") or fetch.get("domain")),
+        ("来源属性", card.get("source_tier")),
+        ("实际地理范围", metadata.get("geographic_scope")),
+        ("病种", metadata.get("disease_name")),
+        ("时间范围", f"{qualification.get('date_min', '—')} 至 {qualification.get('date_max', '—')}"),
+        ("时间粒度", metadata.get("update_frequency")),
+        ("总行数", card.get("row_count")),
+        ("可映射指标", "、".join(actual_metrics)),
+        ("许可状态", card.get("license_status")),
+        ("数据性质", "reported / 待人工确认"),
+        ("复核状态", card.get("effective_status")),
+    )
+    overview_rows = "".join(
+        f'<tr><th scope="row">{_e(key)}</th><td>{_display_value(value)}</td></tr>' for key, value in overview
+    )
+    evidence = (
+        ("发布组织", card.get("publisher")),
+        ("数据落地页", metadata.get("landing_page_url")),
+        ("实际下载 URL", metadata.get("download_url")),
+        ("官方性证据", search.get("source_tier")),
+        ("许可文本/标识", card.get("license_status")),
+        ("抓取时间", fetch.get("completed_at")),
+        ("HTTP / Content-Type", f"{fetch.get('http_status')} / {fetch.get('content_type')}"),
+        ("Artifact 大小", fetch.get("byte_size")),
+        ("Artifact SHA-256", card.get("artifact_sha256")),
+        ("Schema fingerprint", card.get("schema_sha256")),
+        ("最早/最晚报告期", f"{qualification.get('date_min')} / {qualification.get('date_max')}"),
+        ("唯一地区数", qualification.get("unique_geographies")),
+        ("非零疫情值", qualification.get("nonzero_epidemic_values")),
+        ("解析警告", (card.get("quality_json") or {}).get("flags")),
+    )
+    evidence_rows = "".join(
+        f'<tr><th scope="row">{_e(key)}</th><td class="break-url">{_display_value(value)}</td></tr>'
+        for key, value in evidence
+    )
+    query = urllib.parse.urlencode(
+        {
+            "preview_page": preview_page,
+            "page_size": page_size,
+            "date_filter": date_filter,
+            "geo_filter": geo_filter,
+            "indicator_filter": indicator_filter,
+            "quality_filter": quality_filter,
+            "sort": sort,
+        }
+    )
+    technical = {
+        "run_id": card.get("discovery_run_id"),
+        "candidate_version_id": card.get("candidate_version_id"),
+        "search_result_id": search.get("search_result_id"),
+        "fetch_id": fetch.get("fetch_id"),
+        "artifact_sha256": card.get("artifact_sha256"),
+        "schema_sha256": card.get("schema_sha256"),
+        "result_sha256": search.get("result_sha256"),
+        "row_count": card.get("row_count"),
+        "preview_row_count": total,
+    }
+    notice_html = f'<p class="notice" role="status">{_e(notice)}</p>' if notice else ""
+    source_summary = f"""<section id="source-summary-card" class="conclusion" data-pending-not-trusted="true"><h2>待人工复核，尚未进入 Trusted</h2><p>该来源由【{_e(card.get("publisher"))}】发布，覆盖【{_e(request_json.get("country_iso3"))} / {_e(metadata.get("disease_name"))} / {_e(qualification.get("date_min"))} 至 {_e(qualification.get("date_max"))}】，提供【{_e("、".join(actual_metrics) or "尚未确认")}】，共解析【{_e(card.get("row_count"))}】条候选记录。建议进入复核，是因为它补充了来源、指标或时间范围证据。复核时需要确认病例分类、累计口径、修订、许可或解析限制。当前仍是待复核来源，尚未进入 Trusted 数据层。</p></section>"""
+    body = f"""{notice_html}{source_summary}<section class="conclusion"><h2>人工复核前的真实隔离预览</h2><p>候选仍未批准、未拒绝、未 promotion；本页数据不会进入正式 Dashboard。</p></section><section><h2>1. 发现请求与同一 run 漏斗</h2><table><caption>受控发现请求</caption><tbody><tr><th>国家</th><td>{_e(request_json.get("country_iso3"))}</td></tr><tr><th>病种</th><td>{_e(metadata.get("disease_name"))}</td></tr><tr><th>指标</th><td>{_e("、".join(requested_metrics))}</td></tr><tr><th>时间窗口</th><td>{_e(request_json.get("time_window_kind"))}</td></tr><tr><th>来源层级</th><td>{_e("、".join(request_json.get("preferred_source_tiers", [])))}</td></tr><tr><th>创建/完成</th><td>{_e(run.get("created_at"))} / {_e(run.get("completed_at"))}</td></tr></tbody></table><div class="summary-grid">{funnel}</div></section><section><h2>2. 候选数据集</h2><table><caption>候选数据集概览</caption><tbody>{overview_rows}</tbody></table></section><section><h2>3. 请求范围与候选实际范围</h2><table><caption>范围匹配对照</caption><thead><tr><th>字段</th><th>用户要求</th><th>候选实际内容</th><th>匹配结论</th></tr></thead><tbody>{comparison_rows}</tbody></table></section><section><h2>4. 真实候选数据预览</h2><form method="get" class="filters"><label>日期筛选<input name="date_filter" value="{_e(date_filter)}"></label><label>地区筛选<input name="geo_filter" value="{_e(geo_filter)}"></label><label>指标筛选<input name="indicator_filter" value="{_e(indicator_filter)}"></label><label>质量<select name="quality_filter"><option value="">全部</option><option value="errors" {"selected" if quality_filter == "errors" else ""}>仅错误</option></select></label><label>排序<select name="sort"><option value="asc">原始顺序</option><option value="desc" {"selected" if sort == "desc" else ""}>倒序</option></select></label><label>每页<select name="page_size"><option>20</option><option {"selected" if page_size == 50 else ""}>50</option><option {"selected" if page_size == 100 else ""}>100</option></select></label><button>应用</button></form><p>共 {total} 行；当前显示 {(preview_page - 1) * page_size + 1 if total else 0}–{min(preview_page * page_size, total)}。0 表示真实零值，“缺失”表示空单元格，“无记录”表示筛选后没有该行。</p><p><a class="button-link" href="/reviews/{_e(case_id)}/preview.csv">下载隔离区 CSV</a></p><div class="table-box preview-wide"><table id="verified-preview-table"><caption>联网 Artifact 确定性解析结果</caption><thead><tr>{header_html}</tr></thead><tbody>{body_rows}</tbody></table></div><div class="pager"><a href="?{_e(query.replace("preview_page=" + str(preview_page), "preview_page=" + str(max(1, preview_page - 1))))}">上一页</a><span>第 {preview_page}/{pages} 页</span><a href="?{_e(query.replace("preview_page=" + str(preview_page), "preview_page=" + str(min(pages, preview_page + 1))))}">下一页</a></div></section><section><h2>5. Schema 建议映射</h2><div class="table-box"><table id="mapping-table"><caption>字段映射仅为建议，须人工复核</caption><thead><tr><th>源字段</th><th>示例值</th><th>中文含义</th><th>推断类型</th><th>建议目标字段</th><th>转换规则</th><th>缺失数</th><th>映射状态</th><th>风险</th></tr></thead><tbody>{mapping_rows}</tbody></table></div></section><section><h2>6. 来源、许可和质量证据</h2><table><caption>候选证据</caption><tbody>{evidence_rows}</tbody></table></section><section><h2>7. 人工审核边界</h2><p class="hard-block">当前只允许查看与要求修改；批准按钮保持禁用，且没有自动 promotion。</p></section><details><summary>技术证据（默认折叠）</summary>{_technical_table(technical, "同一 run 的固定技术证据")}</details>"""
+    return HTMLResponse(_layout("候选人工复核", body, csrf))
+
+
+def create_app() -> FastAPI:
+    engine = create_engine(
+        os.environ["REVIEW_DATABASE_URL"],
+        connect_args={"options": "-c default_transaction_read_only=off -c statement_timeout=5000"},
+        hide_parameters=True,
+        pool_pre_ping=True,
+    )
+    auth_file, static_dir, sessions = (
+        Path(os.environ["REVIEW_AUTH_FILE"]),
+        Path(__file__).with_name("static"),
+        Sessions(),
+    )
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+        engine.dispose()
+
+    app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next: Any) -> Response:
+        rid = request_id(request)
+        try:
+            response: Response = await call_next(request)
+        except Exception as exc:
+            response = unexpected_error(request, exc, review_console=True)
+        response.headers.update(
+            {
+                "X-Content-Type-Options": "nosniff",
+                "X-Frame-Options": "DENY",
+                "Referrer-Policy": "same-origin",
+                "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+                "Cache-Control": "no-store",
+                "X-Request-ID": rid,
+            }
+        )
+        return response
+
+    def current(request: Request) -> tuple[str, str] | None:
+        return sessions.get(request.cookies.get(COOKIE))
+
+    def page_auth(request: Request) -> tuple[str, str] | RedirectResponse:
+        return current(request) or RedirectResponse("/login", 303)
+
+    def api_auth(request: Request) -> tuple[str, str] | JSONResponse:
+        return current(request) or JSONResponse({"error": "UNAUTHORIZED"}, 401)
+
+    def origin_ok(request: Request, csrf: str, submitted: str) -> bool:
+        referer = request.headers.get("referer", "")
+        return (
+            request.headers.get("origin") == ORIGIN
+            and referer.startswith(ORIGIN + "/")
+            and hmac.compare_digest(csrf, submitted)
+        )
+
+    @app.get("/healthz")
+    def health() -> dict[str, bool]:
+        return {"ok": True}
+
+    @app.get("/readyz")
+    def ready() -> Response:
+        payload, status = readiness(
+            engine,
+            expected_role="epidemicreview",
+            required_views=(
+                "epidemic_preview.preview_review_cards_v1",
+                "epidemic_preview.preview_safe_source_columns_v1",
+                "epidemic_preview.preview_discovery_candidate_links_v1",
+                "epidemic_preview.preview_candidate_version_history_v1",
+                "epidemic_preview.preview_candidate_dataset_summary_v1",
+                "epidemic_preview.preview_candidate_fetches_safe_v1",
+                "epidemic_discovery.review_preview_v",
+            ),
+            required_privileges=(
+                ("table", "epidemic_preview.preview_review_decisions", "SELECT"),
+                ("table", "epidemic_preview.preview_publication_jobs", "SELECT"),
+                ("table", "epidemic_preview.preview_publication_events", "SELECT"),
+                (
+                    "function",
+                    "epidemic_preview.submit_preview_decision(uuid,text,text,uuid,integer,text,jsonb,jsonb,character,jsonb,character,text,boolean)",
+                    "EXECUTE",
+                ),
+                ("function", "epidemic_preview.queue_preview_publication(uuid,uuid)", "EXECUTE"),
+            ),
+            forbidden_privileges=(
+                ("table", "epidemic_discovery.candidate_fetches", "SELECT"),
+                ("table", "epidemic_preview.preview_observations", "INSERT"),
+                ("table", "epidemic_preview.preview_snapshots", "INSERT"),
+                ("table", "epidemic.normalized_observations", "INSERT"),
+                ("table", "epidemic.dataset_snapshots", "INSERT"),
+            ),
+        )
+        return JSONResponse(payload, status_code=status)
+
+    @app.get(f"/static/review.{STATIC_VERSION}.css")
+    def css() -> FileResponse:
+        return FileResponse(static_dir / f"review.{STATIC_VERSION}.css", media_type="text/css")
+
+    @app.get(f"/static/review.{STATIC_VERSION}.js")
+    def js() -> FileResponse:
+        return FileResponse(static_dir / f"review.{STATIC_VERSION}.js", media_type="application/javascript")
+
+    @app.get("/static/review.p1-10-preview.css")
+    def p1_10_css() -> FileResponse:
+        return FileResponse(static_dir / "review.p1-10-preview.css", media_type="text/css")
+
+    @app.get("/static/review.p1-12.css")
+    def p1_12_css() -> FileResponse:
+        return FileResponse(static_dir / "review.p1-12.css", media_type="text/css")
+
+    @app.get("/login")
+    def login_page() -> HTMLResponse:
+        return HTMLResponse(_login())
+
+    @app.post("/login")
+    async def login(request: Request) -> Response:
+        values = urllib.parse.parse_qs((await request.body()).decode(), keep_blank_values=True)
+        username, password = str(values.get("username", [""])[0]), str(values.get("password", [""])[0])
+        key = request.client.host if request.client else "loopback"
+        if not sessions.allowed(key) or not _auth(auth_file, username, password):
+            sessions.failed(key)
+            return HTMLResponse(_login('<p class="error">登录失败。</p>'), 429 if not sessions.allowed(key) else 401)
+        sessions.succeeded(key)
+        response = RedirectResponse(os.environ.get("REVIEW_LOGIN_REDIRECT", "/reviews"), 303)
+        response.set_cookie(
+            COOKIE,
+            sessions.create(username),
+            httponly=True,
+            secure=ORIGIN.lower().startswith("https://"),
+            samesite="strict",
+            path="/",
+            max_age=ABSOLUTE_SECONDS,
+        )
+        return response
+
+    @app.post("/logout")
+    def logout() -> Response:
+        response = RedirectResponse("/login", 303)
+        response.delete_cookie(COOKIE, path="/")
+        return response
+
+    @app.get("/")
+    def root(request: Request) -> Response:
+        return RedirectResponse("/reviews", 303) if current(request) else RedirectResponse("/login", 303)
+
+    @app.get("/daily-updates")
+    def daily_updates(request: Request) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        _, csrf = auth
+        schedules = _rows(
+            engine,
+            "SELECT * FROM epidemic.daily_update_status_v1 ORDER BY source_key,country_alpha2,disease_slug",
+        )
+        state_labels = {
+            "SUCCEEDED_CHANGED": "更新成功，正式快照已发布",
+            "SUCCEEDED_NO_CHANGE": "今日已检查，来源无新数据",
+            "QUEUED": "等待处理",
+            "CLAIMED": "已领取",
+            "FETCHING": "正在抓取",
+            "NORMALIZING": "正在清洗",
+            "SNAPSHOTTING": "正在生成快照",
+            "PARTIAL": "部分完成",
+            "FAILED_RETRYABLE": "失败，等待有限重试",
+            "FAILED_TERMINAL": "失败，需人工检查",
+            "CANCELLED_SOURCE_DISABLED": "来源已停用",
+            "DELAYED": "检查延迟",
+            "NOT_RUN": "尚未运行",
+        }
+        table_rows = "".join(
+            "<tr>"
+            f"<th scope='row'>{_e(row['country_name'])} / {_e(row['disease_name'])}</th>"
+            f"<td>{_e(row['source_name'])}</td>"
+            f"<td>{_e(state_labels.get(str(row['display_state']), row['display_state']))}</td>"
+            f"<td>{_e(row['last_checked_at'])}</td><td>{_e(row['last_success_at'])}</td>"
+            f"<td>{_e(row['normalized_data_through'])}</td><td>{_e(row['next_due_at'])}</td>"
+            f"<td>{_e(row['missed_intervals'])}</td>"
+            f"<td>{_e(row['observations_added'])} / {_e(row['observations_revised'])} / {_e(row['rows_excluded'])}</td>"
+            f"<td>{_e(row['final_reason_code'])}</td></tr>"
+            for row in schedules
+        )
+        if not table_rows:
+            table_rows = '<tr><td colspan="10">尚未配置正式每日更新计划。</td></tr>'
+        body = (
+            "<section><h2>每日自动更新状态</h2>"
+            "<p>每天表示每天检查官方来源；只有来源内容变化并通过既有清洗与质量门禁时才发布新快照。</p>"
+            '<div class="table-box"><table><thead><tr><th>国家 / 病种</th><th>正式来源</th><th>状态</th>'
+            "<th>上次检查</th><th>上次成功</th><th>数据最新报告期</th><th>下次计划</th>"
+            "<th>错过周期</th><th>新增 / 修订 / 排除</th><th>原因码</th></tr></thead>"
+            f"<tbody>{table_rows}</tbody></table></div></section>"
+        )
+        return HTMLResponse(_layout("每日自动更新", body, csrf))
+
+    def catalog_rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        rows = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_discovery_catalog_v2 ORDER BY country_name_en,disease_name_en",
+        )
+        countries: dict[str, dict[str, Any]] = {}
+        diseases: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            countries[row["country_iso3"]] = {
+                key: row[key] for key in ("country_iso2", "country_iso3", "country_name_en", "country_name_zh")
+            }
+            diseases[str(row["disease_id"])] = {
+                key: row[key] for key in ("disease_id", "disease_code", "disease_name_en", "disease_name_zh")
+            }
+        return list(countries.values()), list(diseases.values())
+
+    @app.get("/discoveries")
+    def discoveries(
+        request: Request,
+        page: int = 1,
+        country: str = "",
+        disease: str = "",
+        state: str = "",
+        created_from: str = "",
+        created_to: str = "",
+        auto: int = 0,
+        error: str = "",
+    ) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        _, csrf = auth
+        page = max(1, min(page, 1000))
+        params = {
+            "country": country,
+            "disease": disease,
+            "state": state,
+            "start": created_from or None,
+            "end": created_to or None,
+            "limit": 20,
+            "offset": (page - 1) * 20,
+        }
+        runs = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_discovery_runs_v3 WHERE (:country='' OR country_iso3=:country) AND (:disease='' OR disease_code=:disease) AND (:state='' OR state=:state) AND (CAST(:start AS date) IS NULL OR created_at>=CAST(:start AS date)) AND (CAST(:end AS date) IS NULL OR created_at<CAST(:end AS date)+interval '1 day') ORDER BY created_at DESC,discovery_run_id LIMIT :limit OFFSET :offset",
+            params,
+        )
+        countries, diseases = catalog_rows()
+        country_options = "".join(
+            f'<option value="{_e(item["country_name_zh"])} / {_e(item["country_name_en"])} ({_e(item["country_iso2"])}/{_e(item["country_iso3"])})" data-id="{_e(item["country_iso3"])}"></option>'
+            for item in countries
+        )
+        disease_options = "".join(
+            f'<option value="{_e(item["disease_name_zh"])} / {_e(item["disease_name_en"])} ({_e(item["disease_code"])})" data-id="{_e(item["disease_id"])}"></option>'
+            for item in diseases
+        )
+        state_options = '<option value="">全部状态</option>' + "".join(
+            f'<option value="{_e(code)}" {"selected" if code == state else ""}>{_e(label)}</option>'
+            for code, label in STATE_ZH.items()
+        )
+        run_rows = "".join(
+            f"""<tr><td>{_e(row["created_at"])}</td><td>{_e(row["country_name_zh"])}<small>{_e(row["country_name_en"])} / {_e(row["country_iso3"])}</small></td><td>{_e(row["disease_name_zh"])}<small>{_e(row["disease_name_en"])}</small></td><td>{_e("、".join(row["request_json"].get("desired_metrics", [])))}</td><td>最近滚动一年<small>{_e(row["request_json"].get("time_window_kind"))}</small></td><td>{_e(_state(row["state"]))}<small>{_e(row["state"])}</small></td><td>{_e(_run_progress(row))}</td><td>{_e(_candidate_text(row))}</td><td>{_e(row["last_event_at"] or row["updated_at"])}</td><td>{_e(_elapsed(row["elapsed_seconds"]))}</td><td>{_e(_worker_message(row))}</td><td>{_e(REASON_ZH.get(row["terminal_reason_code"], "等待后台处理" if row["state"] == "QUEUED" else "查看详情"))}</td><td><a href="/discoveries/{_e(row["discovery_run_id"])}">查看详情</a></td></tr>"""
+            for row in runs
+        )
+        notice = f'<p class="error">{_e(error)}</p>' if error else ""
+        body = f"""{notice}<section><h2>发现新数据源</h2><p>仅接受 catalog 标识、固定指标、时间窗口、来源层级、语言与候选上限；不接受 URL、SQL、shell、header 或代码。</p><form id="discovery-form" method="post" action="/discoveries"><input type="hidden" name="csrf" value="{_e(csrf)}"><input type="hidden" id="country-id" name="country_iso3"><input type="hidden" id="disease-id" name="disease_id"><label for="discover-country">国家（可输入搜索，249 国 catalog）</label><input id="discover-country" role="combobox" aria-autocomplete="list" list="discover-country-list" required><datalist id="discover-country-list">{country_options}</datalist><label for="discover-disease">病种（可输入搜索）</label><input id="discover-disease" role="combobox" aria-autocomplete="list" list="discover-disease-list" required><datalist id="discover-disease-list">{disease_options}</datalist><fieldset><legend>目标指标</legend><label><input type="checkbox" name="desired_metrics" value="cases_new" checked>新增病例</label><label><input type="checkbox" name="desired_metrics" value="deaths_new">新增死亡</label><label><input type="checkbox" name="desired_metrics" value="incidence_rate">发病率</label></fieldset><label for="window">时间窗口</label><select id="window" name="time_window_kind"><option value="latest_rolling_year">最近滚动一年</option><option value="latest_complete_calendar_year">最近完整日历年</option><option value="current_year_to_latest_period">本年至最新报告期</option></select><fieldset><legend>来源层级</legend><label><input type="checkbox" name="preferred_source_tiers" value="NATIONAL_HEALTH" checked>国家卫生机构</label><label><input type="checkbox" name="preferred_source_tiers" value="GOVERNMENT_OPEN_DATA" checked>政府开放数据</label><label><input type="checkbox" name="preferred_source_tiers" value="REGIONAL_HEALTH">区域卫生机构</label><label><input type="checkbox" name="preferred_source_tiers" value="PUBLIC_HEALTH_RESEARCH">公共卫生研究合作</label></fieldset><label for="languages">语言偏好（逗号分隔）</label><input id="languages" name="language_preferences" value="zh,en"><label for="maximum">最大候选数（1～20）</label><input id="maximum" name="max_candidates" type="number" min="1" max="20" value="5"><section id="discovery-confirmation" class="confirmation"><h3>提交确认摘要</h3><p>请选择国家和病种后确认。</p></section><label><input type="checkbox" name="confirm_request" value="yes" required>我确认国家、病种、指标和范围正确</label><button type="submit">开始受控检索</button></form></section><section><h2>Discovery 任务列表</h2><form method="get" class="filters"><label for="filter-country">国家 ISO3</label><input id="filter-country" name="country" value="{_e(country)}"><label for="filter-disease">病种 code</label><input id="filter-disease" name="disease" value="{_e(disease)}"><label for="filter-state">状态</label><select id="filter-state" name="state">{state_options}</select><label for="created-from">开始日期</label><input id="created-from" type="date" name="created_from" value="{_e(created_from)}"><label for="created-to">结束日期</label><input id="created-to" type="date" name="created_to" value="{_e(created_to)}"><label><input id="auto-refresh" type="checkbox" name="auto" value="1" {"checked" if auto else ""}>每 5 秒自动刷新</label><button>手动刷新</button></form><div class="table-box"><table><caption>Discovery 任务及真实进度</caption><thead><tr><th scope="col">创建时间</th><th scope="col">国家</th><th scope="col">病种</th><th scope="col">指标</th><th scope="col">时间窗口</th><th scope="col">阶段</th><th scope="col">进度</th><th scope="col">候选状态</th><th scope="col">最近活动</th><th scope="col">已运行</th><th scope="col">Worker</th><th scope="col">下一步</th><th scope="col">详情</th></tr></thead><tbody>{run_rows}</tbody></table></div><div class="pager"><a href="?page={max(1, page - 1)}">上一页</a><span>第 {page} 页</span><a href="?page={page + 1}">下一页</a></div></section>"""
+        body = body.replace(
+            '<label><input type="checkbox" name="preferred_source_tiers" value="PUBLIC_HEALTH_RESEARCH">公共卫生研究合作</label></fieldset>',
+            '<label><input type="checkbox" name="preferred_source_tiers" value="PUBLIC_HEALTH_RESEARCH">公共卫生研究合作</label>'
+            '<label><input type="checkbox" name="preferred_source_tiers" value="INTERNATIONAL_PUBLIC_HEALTH">国际公共卫生官方来源</label>'
+            "<p>此层级默认不选；未勾选时不会检索，也不会静默扩大范围。</p></fieldset>",
+        )
+        return HTMLResponse(_layout("发现与任务进度", body, csrf))
+
+    @app.post("/discoveries")
+    async def submit_discovery_html(request: Request) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        _, csrf = auth
+        values = urllib.parse.parse_qs((await request.body()).decode(), keep_blank_values=True)
+        if not origin_ok(request, csrf, str(values.get("csrf", [""])[0])):
+            return HTMLResponse(_layout("请求被拒绝", '<p class="error">请求来源或 CSRF 校验失败。</p>', csrf), 403)
+        try:
+            country = str(values["country_iso3"][0])
+            disease = uuid.UUID(str(values["disease_id"][0]))
+            metrics = [str(x) for x in values.get("desired_metrics", [])]
+            tiers = [str(x) for x in values.get("preferred_source_tiers", [])]
+            window = str(values["time_window_kind"][0])
+            languages = [x.strip() for x in str(values.get("language_preferences", ["en"])[0]).split(",") if x.strip()]
+            maximum = int(values["max_candidates"][0])
+            confirmed = values.get("confirm_request") == ["yes"]
+            if not country or not metrics or not tiers or not confirmed:
+                raise ValueError("必填字段缺失")
+            with engine.begin() as connection:
+                run_id = connection.execute(
+                    text(
+                        "SELECT epidemic_discovery.submit_structured_discovery(:country,:disease,:metrics,:window,:tiers,:languages,:maximum)"
+                    ),
+                    {
+                        "country": country,
+                        "disease": disease,
+                        "metrics": metrics,
+                        "window": window,
+                        "tiers": tiers,
+                        "languages": languages,
+                        "maximum": maximum,
+                    },
+                ).scalar_one()
+        except (KeyError, ValueError, TypeError):
+            return RedirectResponse(
+                "/discoveries?error=" + urllib.parse.quote("国家、病种、指标或来源层级不完整；未创建任务。"), 303
+            )
+        return RedirectResponse(f"/discoveries/{run_id}", 303)
+
+    @app.post("/discoveries/{run_id}/retry")
+    async def retry_discovery_html(run_id: uuid.UUID, request: Request) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        _, csrf = auth
+        values = urllib.parse.parse_qs((await request.body()).decode(), keep_blank_values=True)
+        if not origin_ok(request, csrf, str(values.get("csrf", [""])[0])):
+            return HTMLResponse(_layout("请求被拒绝", '<p class="error">请求来源或 CSRF 校验失败。</p>', csrf), 403)
+        try:
+            with engine.begin() as connection:
+                retry_id = connection.execute(
+                    text("SELECT epidemic_discovery.retry_discovery_run(:source)"), {"source": run_id}
+                ).scalar_one()
+        except Exception:
+            return RedirectResponse(
+                f"/discoveries/{run_id}?error=" + urllib.parse.quote("当前任务不允许关联重试。"), 303
+            )
+        return RedirectResponse(f"/discoveries/{retry_id}", 303)
+
+    @app.get("/discoveries/{run_id}")
+    def discovery_detail(run_id: uuid.UUID, request: Request) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        row = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_discovery_runs_v3 WHERE discovery_run_id=:id",
+            {"id": run_id},
+        )
+        if not row:
+            return HTMLResponse(_layout("未找到任务", '<p class="error">未找到 Discovery 任务。</p>', auth[1]), 404)
+        run = row[0]
+        events = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_discovery_events_v3 WHERE discovery_run_id=:id ORDER BY created_at,event_id",
+            {"id": run_id},
+        )
+        reused_candidates = _rows(
+            engine,
+            "SELECT candidate_id,candidate_version_id,artifact_sha256,link_reason,linked_at,"
+            "review_case_id,publisher,dataset_name FROM epidemic_preview.preview_discovery_candidate_links_v1 "
+            "WHERE discovery_run_id=:id ORDER BY linked_at,link_id",
+            {"id": run_id},
+        )
+        request_value = run["request_json"]
+        progress = run["progress_json"] or {}
+        conclusion = _conclusion(run)
+        coverage_html = _coverage_table(events)
+        request_rows = (
+            ("国家", f"{run['country_name_zh']} / {run['country_name_en']} ({run['country_iso3']})"),
+            ("病种", f"{run['disease_name_zh']} / {run['disease_name_en']}"),
+            ("指标", "、".join(request_value.get("desired_metrics", []))),
+            ("时间窗口", request_value.get("time_window_kind")),
+            ("来源层级", "、".join(request_value.get("preferred_source_tiers", []))),
+            (
+                "搜索预算",
+                f"最多 {run['budget_json'].get('queries')} 个查询；{run['budget_json'].get('duration_seconds')} 秒",
+            ),
+        )
+        req_html = "".join(f'<tr><th scope="row">{_e(k)}</th><td>{_e(v)}</td></tr>' for k, v in request_rows)
+        has_raw = int(progress.get("raw_results", 0)) > 0
+        has_candidate = int(run.get("candidate_count") or 0) > 0
+        is_terminal = run["state"] in TERMINAL_STATES
+        phases = [
+            ("排队", "已完成"),
+            ("生成查询计划", "已完成" if int(progress.get("plan_steps", 0)) > 0 else "等待执行"),
+            (
+                "实际 Provider/目录检索",
+                "已完成"
+                if int(progress.get("network_requests", 0)) > 0
+                else ("未执行：缺少配置" if is_terminal else "等待执行"),
+            ),
+            ("安全访问", "已完成" if has_raw else ("已跳过：无输入" if is_terminal else "等待执行")),
+            ("去重", "已完成" if has_raw else ("已跳过：无输入" if is_terminal else "等待执行")),
+            ("Schema 分析", "已完成" if has_candidate else ("不适用：无候选" if is_terminal else "等待执行")),
+            (
+                "生成复核材料",
+                "已完成" if run["state"] == "REVIEW_READY" else ("不适用：无候选" if is_terminal else "等待执行"),
+            ),
+        ]
+        phase_html = "".join(
+            f'<li class="phase-{"done" if status == "已完成" else "pending"}">{_e(label)}：{_e(status)}</li>'
+            for label, status in phases
+        )
+        event_html = "".join(
+            f"<tr><td>{_e(item['created_at'])}</td><td>{_e(_state(item['to_state']))}<small>{_e(item['event_code'])}</small></td><td>{_e(REASON_ZH.get(item['event_code'], item['details'].get('message') or item['details'].get('label_zh') or '状态已持久化'))}</td><td>{'需要' if item['requires_user_action'] else '不需要'}</td></tr>"
+            for item in events
+        )
+        reason = REASON_ZH.get(run["terminal_reason_code"], run["last_error_detail"] or "当前没有终态阻断原因。")
+        result_rows = (
+            ("计划查询", progress.get("planned_queries", progress.get("queries", 0))),
+            ("已执行查询", progress.get("executed_queries", 0)),
+            ("真实网络请求", progress.get("network_requests", 0)),
+            ("成功响应", progress.get("successful_responses", 0)),
+            ("已尝试目录", progress.get("directories_attempted", 0)),
+            ("成功目录", progress.get("directories_succeeded", 0)),
+            ("原始命中", progress.get("raw_results", 0)),
+            ("去重后", progress.get("deduplicated_results", progress.get("deduplicated", 0))),
+            ("策略拦截", progress.get("policy_blocked_results", 0)),
+            ("质量淘汰", progress.get("quality_rejected_results", 0)),
+            ("合格候选", progress.get("qualified_candidates", progress.get("qualified", 0))),
+        )
+        result_html = "".join(
+            f'<div class="stat"><strong>{_e(k)}</strong><span>{_e(v)}</span></div>' for k, v in result_rows
+        )
+        retry_reason = str(run.get("terminal_reason_code") or "")
+        retry_form = ""
+        if is_terminal and retry_reason in {
+            "GENERIC_SEARCH_PROVIDER_UNCONFIGURED",
+            "BLOCKED_GENERIC_SEARCH_CONFIGURATION",
+            "DISCOVERY_INCOMPLETE",
+        }:
+            retry_form = f'''<form method="post" action="/discoveries/{_e(run_id)}/retry"><input type="hidden" name="csrf" value="{_e(auth[1])}"><p>此操作保留旧运行，并创建带 retry_of_run_id 的新任务。</p><button type="submit">创建关联重试任务</button></form>'''
+        lease_message = (
+            "任务已结束，租约已释放"
+            if is_terminal
+            and not run.get("claim_owner")
+            and not run.get("lease_expires_at")
+            and not run.get("heartbeat_at")
+            else "任务仍持有活动租约"
+            if run.get("claim_owner")
+            else "当前无活动租约"
+        )
+        international_note = (
+            "用户已选择国际公共卫生官方来源。"
+            if "INTERNATIONAL_PUBLIC_HEALTH" in request_value.get("preferred_source_tiers", [])
+            else "用户未选择国际公共卫生官方来源；系统没有静默扩大检索范围。"
+        )
+        zero_warning = (
+            '<p class="notice"><strong>注意：</strong>0 个候选不代表不存在数据源，请结合本次检索覆盖范围判断。</p>'
+            if int(run.get("candidate_count") or 0) == 0
+            else ""
+        )
+        reuse_html = ""
+        if reused_candidates:
+            reuse_rows = "".join(
+                f"<tr><td>{_e(item['publisher'])}</td><td>{_e(item['dataset_name'])}</td>"
+                f'<td><a href="/reviews/{_e(item["review_case_id"])}">打开既有候选复核页</a></td>'
+                f"<td>{_e(item['linked_at'])}</td></tr>"
+                for item in reused_candidates
+            )
+            reuse_html = (
+                '<section class="notice"><h2>已复用既有候选</h2>'
+                "<p>本次真实 HTTP 抓取返回了与已验证 Quarantine Artifact 完全相同的内容；系统已将本次 Discovery Run "
+                "幂等关联到既有 Candidate Version，没有伪造新候选，也没有把结果显示为 0。</p>"
+                '<div class="table-box"><table><caption>本次任务复用关系</caption><thead><tr><th>发布机构</th>'
+                f"<th>数据集</th><th>人工复核</th><th>关联时间</th></tr></thead><tbody>{reuse_rows}</tbody></table></div></section>"
+            )
+        body = f"""<section class="conclusion"><h2>{_e(conclusion)}</h2><p>{_e(_candidate_text(run))}</p>{zero_warning}<p>{_e(_worker_message(run))}；最近活动：{_e(run["last_event_at"])}</p></section>{reuse_html}<section><h2>1. 请求内容</h2><table class="compact"><caption>受控发现请求</caption><tbody>{req_html}</tbody></table><p>{_e(international_note)}</p></section><section><h2>2. 当前进度</h2><ol class="phases">{phase_html}</ol></section><section><h2>3. 实际搜索覆盖</h2>{coverage_html}</section><section><h2>4. 结果统计</h2><div class="summary-grid">{result_html}</div><p>旧页面把本地策略循环同时计为查询、目录和阻断，因此曾显示 4/4/4；这些数字不代表真实 HTTP 请求。</p></section><section><h2>5. 事件时间线</h2><div class="table-box"><table><caption>不可变 Discovery 事件</caption><thead><tr><th scope="col">时间</th><th scope="col">阶段</th><th scope="col">中文说明</th><th scope="col">需要处理</th></tr></thead><tbody>{event_html}</tbody></table></div></section><section><h2>6. 原因与下一步</h2><p>{_e(reason)}</p><p><strong>管理员责任：</strong>Provider 配置、服务器网络和基础设施由管理员处理，普通复核用户无需处理服务器配置。</p><p><strong>下一步：</strong>{_e((events[-1]["details"] if events else {}).get("next_step", "等待 Worker 处理。"))}</p>{retry_form}</section><details><summary>技术证据（默认折叠）</summary><p>{_e(lease_message)}</p>{_technical_table({"run_id": run_id, "state_version": run["state_version"], "attempt_count": run["attempt_count"], "last_error_code": run["last_error_code"], "terminal_reason_code": run["terminal_reason_code"]}, "队列技术状态")}</details>"""
+        return HTMLResponse(_layout("Discovery 任务详情", body, auth[1]))
+
+    @app.get("/reviews")
+    def reviews(request: Request, page: int = 1, status: str = "", publisher: str = "", tier: str = "") -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        page = max(1, min(page, 1000))
+        params = {"limit": 10, "offset": (page - 1) * 10, "status": status, "publisher": publisher, "tier": tier}
+        rows = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_candidate_cards_v2 WHERE (:status='' OR effective_status=:status) AND (:publisher='' OR publisher ILIKE '%'||:publisher||'%') AND (:tier='' OR source_tier=:tier) ORDER BY review_case_id LIMIT :limit OFFSET :offset",
+            params,
+        )
+        card_items = []
+        for row in rows:
+            metadata = row.get("metadata") or {}
+            qualification = metadata.get("qualification") or {}
+            metrics = sorted(set((qualification.get("metric_fields") or {}).values()))
+            domain = urllib.parse.urlsplit(str(metadata.get("download_url") or "")).hostname or "待核验"
+            effective_status = str(row.get("effective_status") or "NEEDS_IMPLEMENTATION")
+            status_class = "success" if effective_status == "REVIEW_READY" else "blocked"
+            card_items.append(
+                f"""<article class="candidate"><div class="status {status_class}">{_e(_label(effective_status)[0])}</div><h2>{_e(row["dataset_name"])}</h2><p>{_e(row["publisher"])}</p><dl><dt>来源域名</dt><dd>{_e(domain)}</dd><dt>来源层级</dt><dd>{_e(row["source_tier"])}</dd><dt>实际地理范围</dt><dd>{_e(row["geographic_scope"])}</dd><dt>病种</dt><dd>{_e(metadata.get("disease_name"))}</dd><dt>时间范围</dt><dd>{_e(qualification.get("date_min"))} 至 {_e(qualification.get("date_max"))}</dd><dt>总行数</dt><dd>{_e(row.get("row_count"))}</dd><dt>可映射指标</dt><dd>{_e("、".join(metrics))}</dd><dt>许可状态</dt><dd>{_e(_label(row["license_status"])[0])}</dd><dt>风险</dt><dd>{_e("、".join(row.get("risk_flags") or []))}</dd><dt>复核状态</dt><dd>{_e(effective_status)}</dd></dl><p>评分 {_e(row["score"])} <small>只用于候选排序，不代表允许入库。</small></p><a class="button-link" href="/reviews/{_e(row["review_case_id"])}">查看数据</a></article>"""
+            )
+        cards = "".join(card_items) or '<p class="notice">当前筛选条件下没有候选。</p>'
+        overview = _review_overview(engine)
+        body = f"""{overview}<section><h2>待复核候选</h2><form method="get" class="filters"><label for="status">状态</label><select id="status" name="status"><option value="">全部</option><option value="REVIEW_READY">等待人工复核</option><option value="NEEDS_IMPLEMENTATION">需要先实现</option></select><label for="publisher">发布者</label><input id="publisher" name="publisher" value="{_e(publisher)}"><label for="tier">来源层级</label><input id="tier" name="tier" value="{_e(tier)}"><button>筛选</button></form><div class="candidate-grid">{cards}</div><div class="pager"><a href="/reviews?page={max(1, page - 1)}">上一页</a><span>第 {page} 页</span><a href="/reviews?page={page + 1}">下一页</a></div></section>"""
+        return HTMLResponse(_layout("待复核候选", body, auth[1]))
+
+    @app.get("/history")
+    def history(request: Request) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        rows = _rows(
+            engine, "SELECT * FROM epidemic_discovery.review_decision_history_v2 ORDER BY created_at DESC LIMIT 100"
+        )
+        body = (
+            "<section><h2>审核历史</h2><table><caption>最近 100 条不可变审核记录</caption><thead><tr><th>时间</th><th>候选</th><th>决定</th><th>原因</th></tr></thead><tbody>"
+            + "".join(
+                f"<tr><td>{_e(x['created_at'])}</td><td>{_e(x['dataset_name'])}</td><td>{_e(x['decision'])}</td><td>{_e(x['reason'])}</td></tr>"
+                for x in rows
+            )
+            + "</tbody></table></section>"
+        )
+        return HTMLResponse(_layout("审核历史", body, auth[1]))
+
+    @app.get("/reviews/{case_id}")
+    def review_detail(
+        case_id: uuid.UUID,
+        request: Request,
+        preview_page: int = 1,
+        preview_mode: str = "compare",
+        field_q: str = "",
+        field_status: str = "",
+        field_risk: str = "",
+        only_errors: int = 0,
+        page_size: int = 20,
+        date_filter: str = "",
+        geo_filter: str = "",
+        indicator_filter: str = "",
+        quality_filter: str = "",
+        sort: str = "asc",
+        notice: str = "",
+    ) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        cards = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_candidate_cards_v2 WHERE review_case_id=:id",
+            {"id": case_id},
+        )
+        if not cards:
+            return HTMLResponse(_layout("未找到", '<p class="error">未找到复核案例。</p>', auth[1]), 404)
+        card = cards[0]
+        if str(card.get("dataset_name")) != "InfoDengue municipal weekly dengue alert API":
+            return _generic_review_page(
+                engine,
+                card,
+                case_id,
+                auth[1],
+                preview_page=preview_page,
+                page_size=page_size,
+                date_filter=date_filter,
+                geo_filter=geo_filter,
+                indicator_filter=indicator_filter,
+                quality_filter=quality_filter,
+                sort=sort,
+                notice=notice,
+            )
+        fields = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_field_mapping_v2 WHERE review_case_id=:id ORDER BY ordinal",
+            {"id": case_id},
+        )
+        all_fields = list(fields)
+        integrity = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_mapping_integrity_v2 WHERE review_case_id=:id ORDER BY source_field",
+            {"id": case_id},
+        )
+        if field_q:
+            fields = [
+                x
+                for x in fields
+                if field_q.casefold() in str(x["source_field"]).casefold()
+                or field_q in FIELD_ZH.get(str(x["source_field"]), "")
+            ]
+        if field_status:
+            fields = [x for x in fields if x["mapping_status"] == field_status]
+        if field_risk:
+            fields = [
+                x
+                for x in fields
+                if (str(x["source_field"]) in MODEL_FIELDS or x.get("warning") or x.get("warning_flags"))
+            ]
+        priority = {"unsupported": 1, "raw-only": 3, "mapped": 2, "ignored": 4}
+        fields.sort(
+            key=lambda x: (0 if x.get("warning") else priority.get(str(x["mapping_status"]), 5), int(x["ordinal"]))
+        )
+        preview_page = max(1, preview_page)
+        preview_mode = preview_mode if preview_mode in {"raw", "clean", "compare"} else "compare"
+        preview = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_preview_rows_v2 WHERE review_case_id=:id ORDER BY sample_kind,row_ordinal LIMIT 25 OFFSET :offset",
+            {"id": case_id, "offset": (preview_page - 1) * 25},
+        )
+        if only_errors:
+            preview = [x for x in preview if x.get("row_errors")]
+        source_names = {str(item["source_field"]) for item in all_fields}
+        missing_geocode = "Localidade_id" in source_names and "geocode" not in source_names
+        hard = ["当前正式模型尚未证明支持该候选的实际地理层级与字段组合，不能直接进入 Trusted。"]
+        if integrity or missing_geocode:
+            hard.append("映射要求的关键地点字段缺失或语义未确认，不能批准；不得静默替换为其他字段。")
+        manual = [
+            "发布者、官方性和再分发许可需要人工确认。",
+            "CUSTOM/UNKNOWN 许可目前还不能据此入库。",
+            "模型派生字段仅保留原始证据。",
+        ]
+        passed = ["隔离 artifact、TLS、SSRF 与 active content 技术检查已完成。", "数据为聚合级，未发现个人级记录。"]
+        hard_html = "".join(f"<li>{_e(x)}</li>" for x in hard)
+        manual_html = "".join(f"<li>{_e(x)}</li>" for x in manual)
+        passed_html = "".join(f"<li>{_e(x)}</li>" for x in passed)
+        overview = (
+            ("数据集", card["dataset_name"]),
+            ("发布者", card["publisher"]),
+            ("实际覆盖", card["geographic_scope"]),
+            ("格式", card["format"]),
+            ("行列", f"{card['row_count']} × {card['column_count']}"),
+            ("许可", _label(card["license_status"])[0]),
+            ("评分", f"{card['score']}（只用于候选排序，不代表允许入库）"),
+        )
+        overview_html = "".join(f'<tr><th scope="row">{_e(k)}</th><td>{_e(v)}</td></tr>' for k, v in overview)
+        field_rows = ""
+        for item in fields:
+            source = str(item["source_field"])
+            status = str(item["mapping_status"])
+            meaning = FIELD_ZH.get(source, "来源未提供已登记的中文字段说明")
+            if source in MODEL_FIELDS:
+                status = "raw-only"
+                warning = "模型派生，仅保留原始证据，不作为官方报告病例。"
+            else:
+                warning = item.get("warning") or (
+                    "需要人工确认字段含义。"
+                    if not item.get("canonical_field") and item["mapping_status"] == "mapped"
+                    else "无"
+                )
+            technical = f"""<details><summary>查看技术映射</summary><p>canonical：{_e(item.get("canonical_field"))}</p><p>metric：{_e(item.get("metric_code"))}</p><p>transform：{_e(item.get("transform"))} — {_e(TRANSFORM_ZH.get(str(item.get("transform")), "未登记转换说明"))}</p></details>"""
+            field_rows += f"""<tr data-source-field="{_e(source)}" data-mapping-status="{_e(status)}" data-canonical="{_e(item.get("canonical_field") or "")}" data-metric="{_e(item.get("metric_code") or "")}" data-transform="{_e(item.get("transform") or "identity")}"><th scope="row">{_e(source)}</th><td>{_display_value(item.get("example_value"))}</td><td>{_e(meaning)}</td><td>{_e(item.get("inferred_type"))}</td><td>{_e(_label(status)[0])}<small>{_e(status)}</small></td><td>{_e(item.get("canonical_field") or item.get("metric_code") or "不进入正式数据")}</td><td>{technical}</td><td>{_e(item.get("confidence"))}</td><td>{_e(warning)}</td></tr>"""
+        mapping_missing = "".join(
+            f'<div class="hard-block"><strong>{_e(_label(item["finding_code"])[0])}</strong><p>映射要求字段 {_e(item["source_field"])}，但当前文件没有该列，不能批准。</p></div>'
+            for item in integrity
+        )
+        if missing_geocode and not integrity:
+            mapping_missing += (
+                '<div class="hard-block"><strong>映射来源字段缺失</strong>'
+                "<p>映射要求字段 geocode，但当前文件没有该列，不能批准；"
+                "不得静默替换为 Localidade_id。</p></div>"
+            )
+        preview_rows = ""
+        for row in preview:
+            values = _preview_values(row)
+            errors = row.get("row_errors") or []
+            status = "有错误" if errors else "可预览"
+            preview_rows += f"""<tr class="{"row-error" if errors else ""}"><td>{_e(row["row_ordinal"])}</td><td>{_e(row["sample_kind"])}</td><td>{_e(status)}</td><td>{_comparison(*values["period"], preview_mode)}</td><td>{_comparison(*values["geography"], preview_mode)}</td><td>{_comparison(*values["cases"], preview_mode)}</td><td>{_comparison(*values["deaths"], preview_mode)}</td><td>{_comparison(*values["unit"], preview_mode)}</td><td>{_e("；".join(errors) if errors else "无")}</td><td>{_e(str(row["row_sha256"])[:12])}</td></tr>"""
+        total = int(preview[0]["total_rows"]) if preview else 0
+        pages = max(1, (total + 24) // 25)
+        quality = card.get("quality_json") or {}
+        security = card.get("security_json") or {}
+        nulls = sum(int(x.get("null_count") or 0) for x in all_fields)
+        cells = int(card["row_count"]) * int(card["column_count"])
+        zeros = sum(1 for row in preview for value in (row.get("raw_json") or {}).values() if value in (0, "0", "0.0"))
+        groups = {
+            "A. 来源身份与许可": [
+                _check_row(
+                    "发布者", "warn", "公共卫生合作项目，不是国家卫生部。", card["publisher"], "人工确认权威性。"
+                ),
+                _check_row(
+                    "许可与条款",
+                    "block",
+                    "CUSTOM/UNKNOWN 许可目前还不能据此入库。",
+                    card["license_status"],
+                    "核验条款、再分发和衍生使用。",
+                ),
+                _check_row(
+                    "robots / 使用限制",
+                    "unknown",
+                    "当前证据未单独记录 robots 结论。",
+                    security.get("robots"),
+                    "补充可访问与使用限制证据。",
+                ),
+            ],
+            "B. 地理与时间": [
+                _check_row(
+                    "实际覆盖",
+                    "block",
+                    "实际地理层级不能静默当作国家级数据。",
+                    card["geographic_scope"],
+                    "实现 municipality 标准地点映射。",
+                ),
+                _check_row(
+                    "地区代码证据",
+                    "block",
+                    "geocode 缺失且 Localidade_id 语义未确认。",
+                    "Localidade_id 存在；geocode 不存在",
+                    "确认来源文档后创建新 mapping revision。",
+                ),
+                _check_row(
+                    "日期与粒度",
+                    "warn",
+                    "报告周不等同感染发生日。",
+                    quality.get("latest_report_period") or "周度报告期",
+                    "确认周起止和最新日期。",
+                ),
+            ],
+            "C. 数据内容与质量": [
+                _check_row(
+                    "行列数", "pass", "样本规模已记录。", f"{card['row_count']} × {card['column_count']}", "无。"
+                ),
+                _check_row(
+                    "缺失值",
+                    "warn",
+                    "缺失与 0 不可互换。",
+                    f"{nulls} / {cells}（{(100 * nulls / cells if cells else 0):.2f}%）",
+                    "核对关键列缺失规则。",
+                ),
+                _check_row("显式 0", "pass", "0 保持为真实零值。", f"当前预览 {zeros} 个显式 0", "不得转换为缺失。"),
+                _check_row(
+                    "模型派生字段", "warn", "不作为官方报告病例。", "、".join(sorted(MODEL_FIELDS)), "仅保留原始证据。"
+                ),
+                _check_row(
+                    "重复/非法/未来日期/负修订",
+                    "unknown",
+                    "当前评估没有完整分项计数。",
+                    quality.get("quality"),
+                    "补充完整质量计数后再批准。",
+                ),
+            ],
+            "D. 安全与隐私": [
+                _check_row(
+                    "TLS / SSRF / DNS rebinding",
+                    "pass",
+                    "网络访问通过受控安全检查。",
+                    f"TLS={security.get('tls')}；SSRF={security.get('ssrf')}；DNS={security.get('dns_rebinding')}",
+                    "无。",
+                ),
+                _check_row(
+                    "MIME / active content",
+                    "pass",
+                    "隔离 CSV 未执行主动内容。",
+                    f"MIME={card['format']}；active={security.get('active_content')}",
+                    "继续保持隔离解析。",
+                ),
+                _check_row(
+                    "prompt injection / secret / PII / person-level",
+                    "warn",
+                    "聚合数据未发现 PII，但仍需人工确认。",
+                    f"PII={card['pii_status']}；命中={security.get('pii_hits')}",
+                    "不得导入个人级数据。",
+                ),
+            ],
+            "E. 版本证据": [
+                _check_row(
+                    "artifact/schema/mapping/terms",
+                    "pass",
+                    "复核必须固定到不可变版本。",
+                    f"{str(card['artifact_sha256'])[:12]} / {str(card['schema_sha256'])[:12]} / {str(card['mapping_sha256'])[:12]} / {str(card['terms_sha256'])[:12]}",
+                    "批准时重新核对完整 SHA。",
+                ),
+            ],
+        }
+        group_html = "".join(
+            f'<section class="evidence-group"><h3>{_e(name)}</h3><div class="table-box"><table><caption>{_e(name)}检查</caption><thead><tr><th>检查内容</th><th>结果</th><th>对用户意味着什么</th><th>证据摘要</th><th>入库前还需做什么</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></section>'
+            for name, rows in groups.items()
+        )
+        mapped = sum(x["mapping_status"] == "mapped" and x["source_field"] not in MODEL_FIELDS for x in all_fields)
+        raw = sum(x["mapping_status"] == "raw-only" or x["source_field"] in MODEL_FIELDS for x in all_fields)
+        ignored = sum(x["mapping_status"] == "ignored" for x in all_fields)
+        reasons = "".join(f"<li>{_e(item)}</li>" for item in hard)
+        body = f"""{_plain_candidate_summary(card, preview)}<section class="conclusion hard"><h2>一句话入库结论：不能批准</h2><p>当前有 {len(hard)} 个硬阻断；必须先修复地理、字段或许可等入库前问题。</p><div class="triage"><div><h3>硬阻断</h3><ul>{hard_html}</ul></div><div><h3>需要人工确认</h3><ul>{manual_html}</ul></div><div><h3>已通过检查</h3><ul>{passed_html}</ul></div></div></section><section><h2>数据集概览</h2><table><caption>候选数据集概览</caption><tbody>{overview_html}</tbody></table></section><section><h2>表1：字段用途与入库映射</h2><p>这里说明原始数据每一列的含义、系统是否使用，以及它将进入哪个标准字段。未映射字段不会进入正式预测数据。</p>{mapping_missing}<form method="get" class="filters"><label for="field-q">字段名搜索</label><input id="field-q" name="field_q" value="{_e(field_q)}"><label for="field-status">状态</label><select id="field-status" name="field_status"><option value="">全部</option><option value="mapped">用于入库</option><option value="raw-only">仅保留原始证据</option><option value="ignored">忽略</option><option value="unsupported">暂不支持</option></select><label><input type="checkbox" name="field_risk" value="1" {"checked" if field_risk else ""}>只看风险字段</label><button>筛选</button></form><div class="table-box"><table id="mapping-table"><caption>字段用途与入库映射（全部 schema 字段可筛选）</caption><thead><tr><th>来源字段</th><th>示例值</th><th>中文含义</th><th>原始类型</th><th>建议处理</th><th>标准字段/指标</th><th>转换和单位</th><th>置信度</th><th>问题及确认事项</th></tr></thead><tbody>{field_rows}</tbody></table></div><section id="mapping-diff" class="confirmation"><h3>保存前差异预览</h3><p>尚未修改；保存会创建新 mapping revision，不覆盖历史。</p></section><button id="save-mapping" type="button" data-case="{_e(case_id)}" data-revision="{_e(card["current_mapping_revision"])}">保存 mapping 调整</button><p id="mapping-result" aria-live="polite"></p></section><section><h2>表2：原始数据与清洗结果预览</h2><p>默认显示原始/清洗对照；不会显示 JSON 对象字符串。0 表示来源中的真实零值，缺失不会显示为 0。</p><form method="get" class="filters"><label for="preview-mode">视图模式</label><select id="preview-mode" name="preview_mode"><option value="compare">原始/清洗对照</option><option value="raw">原始值</option><option value="clean">清洗结果</option></select><label><input type="checkbox" name="only_errors" value="1" {"checked" if only_errors else ""}>只看有错误的行</label><button>应用视图</button></form><div class="table-box"><table><caption>原始数据与清洗结果预览，第 {preview_page}/{pages} 页，共 {total} 行</caption><thead><tr><th>样本序号</th><th>样本类型</th><th>行状态</th><th>报告期 / source-as-of</th><th>地理名称/代码</th><th>病例或主指标</th><th>死亡或次指标</th><th>单位</th><th>转换错误</th><th>row SHA</th></tr></thead><tbody>{preview_rows}</tbody></table></div><div class="pager"><a href="?preview_page={max(1, preview_page - 1)}&preview_mode={preview_mode}">上一页</a><span>第 {preview_page}/{pages} 页</span><a href="?preview_page={min(pages, preview_page + 1)}&preview_mode={preview_mode}">下一页</a></div></section><section><h2>表3：来源可信度、数据质量与入库风险</h2><div class="hard-block"><strong>硬阻断置顶</strong><ul>{reasons}</ul></div>{group_html}</section><section><h2>审核操作</h2><div class="summary-grid"><div class="stat"><strong>将入库字段</strong><span>{mapped}</span></div><div class="stat"><strong>仅保留 raw</strong><span>{raw}</span></div><div class="stat"><strong>忽略字段</strong><span>{ignored}</span></div><div class="stat"><strong>实际地理层级</strong><span>{_e(card["geographic_scope"])}</span></div><div class="stat"><strong>硬阻断</strong><span>{len(hard)}</span></div><div class="stat"><strong>待确认</strong><span>{len(manual)}</span></div></div><form method="post" action="/reviews/{_e(case_id)}/decision"><input type="hidden" name="csrf" value="{_e(auth[1])}"><input type="hidden" name="etag" value="{_e(card["etag"])}"><input type="hidden" name="idempotency_key" value="{uuid.uuid4()}"><label for="reason-template">中文原因模板</label><select id="reason-template"><option value="">请选择</option><option>需要确认地理层级与地点代码</option><option>需要补充许可和条款证据</option><option>需要修复缺失字段映射</option></select><label for="decision-reason">自由文本原因</label><textarea id="decision-reason" name="reason" rows="4"></textarea><label for="reauth-password">近期重新认证密码</label><input id="reauth-password" name="password" type="password" autocomplete="current-password"><div class="decision-buttons"><button name="decision" value="CHANGES_REQUESTED">要求修改</button><button name="decision" value="REJECTED">拒绝</button><button name="decision" value="APPROVED" disabled>批准当前版本并排队入库</button></div><p class="error">批准已禁用：</p><ul>{reasons}</ul></form></section><details><summary>折叠技术证据</summary>{_technical_table({"candidate_version_id": card["candidate_version_id"], "artifact_sha256": card["artifact_sha256"], "schema_sha256": card["schema_sha256"], "mapping_sha256": card["mapping_sha256"], "assessment_sha256": card["assessment_sha256"], "security_report_sha256": card["security_report_sha256"]}, "固定版本技术证据")}</details>"""
+        notice_html = f'<p class="notice" role="status">{_e(notice)}</p>' if notice else ""
+        return HTMLResponse(_layout("候选人工复核", notice_html + body, auth[1]))
+
+    @app.get("/reviews/{case_id}/preview.csv")
+    def review_preview_csv(case_id: uuid.UUID, request: Request) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        cards = _rows(
+            engine,
+            "SELECT candidate_version_id FROM epidemic_discovery.review_candidate_cards_v2 WHERE review_case_id=:id",
+            {"id": case_id},
+        )
+        if not cards:
+            return HTMLResponse(_layout("未找到", '<p class="error">未找到复核案例。</p>', auth[1]), 404)
+        rows = _rows(
+            engine,
+            "SELECT row_ordinal,sanitized_json FROM epidemic_discovery.source_preview_rows WHERE candidate_version_id=:version ORDER BY row_ordinal LIMIT 100",
+            {"version": cards[0]["candidate_version_id"]},
+        )
+        headers: list[str] = []
+        for row in rows:
+            for key in row.get("sanitized_json") or {}:
+                if str(key) not in headers:
+                    headers.append(str(key))
+
+        def cell(value: object) -> str:
+            rendered = "" if value is None else str(value)
+            return "'" + rendered if rendered.lstrip().startswith(("=", "+", "-", "@")) else rendered
+
+        output = io.StringIO(newline="")
+        writer = csv.writer(output)
+        writer.writerow(headers)
+        for row in rows:
+            values = row.get("sanitized_json") or {}
+            writer.writerow([cell(values.get(header)) for header in headers])
+        return Response(
+            output.getvalue(),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="candidate-{case_id}.csv"'},
+        )
+
+    @app.post("/reviews/{case_id}/decision")
+    async def review_decision_html(case_id: uuid.UUID, request: Request) -> Response:
+        auth = page_auth(request)
+        if isinstance(auth, RedirectResponse):
+            return auth
+        username, csrf = auth
+        values = urllib.parse.parse_qs((await request.body()).decode(), keep_blank_values=True)
+        if not origin_ok(request, csrf, str(values.get("csrf", [""])[0])):
+            return HTMLResponse(_layout("请求被拒绝", '<p class="error">CSRF 或来源校验失败。</p>', csrf), 403)
+        action = str(values.get("decision", [""])[0])
+        reason = str(values.get("reason", [""])[0]).strip()
+        if action in {"REJECTED", "CHANGES_REQUESTED"} and not reason:
+            return RedirectResponse(f"/reviews/{case_id}?notice=" + urllib.parse.quote("必须填写原因。"), 303)
+        card = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_candidate_cards_v2 WHERE review_case_id=:id",
+            {"id": case_id},
+        )
+        if not card:
+            return RedirectResponse("/reviews?notice=" + urllib.parse.quote("候选不存在。"), 303)
+        if action == "APPROVED" and card[0]["approval_blocked"]:
+            return RedirectResponse(f"/reviews/{case_id}?notice=" + urllib.parse.quote("存在硬阻断，不能批准。"), 303)
+        if not _auth(auth_file, username, str(values.get("password", [""])[0])):
+            return RedirectResponse(f"/reviews/{case_id}?notice=" + urllib.parse.quote("近期重新认证失败。"), 303)
+        try:
+            key = uuid.UUID(str(values["idempotency_key"][0]))
+            etag = str(values["etag"][0])
+        except (KeyError, ValueError):
+            return RedirectResponse(f"/reviews/{case_id}?notice=" + urllib.parse.quote("状态参数无效，请刷新。"), 303)
+        row = card[0]
+        evidence = {
+            name: str(row[name])
+            for name in (
+                "candidate_version_id",
+                "canonical_endpoint_sha256",
+                "publisher_evidence_sha256",
+                "terms_sha256",
+                "artifact_sha256",
+                "schema_sha256",
+                "mapping_sha256",
+                "assessment_sha256",
+                "security_report_sha256",
+            )
+        }
+        evidence["etag"] = etag
+        evidence_sha = hashlib.sha256(json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        decision_sha = hashlib.sha256(f"{case_id}|{key}|{action}|{evidence_sha}".encode()).hexdigest()
+        try:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "SELECT epidemic_discovery.submit_review_decision(:case,:action,'APPROVE_ARTIFACT_ONCE',:reviewer,:reason,:key,:etag,CAST(:evidence AS jsonb),:evidence_sha,:decision_sha)"
+                    ),
+                    {
+                        "case": case_id,
+                        "action": action,
+                        "reviewer": username,
+                        "reason": reason,
+                        "key": key,
+                        "etag": etag,
+                        "evidence": json.dumps(evidence),
+                        "evidence_sha": evidence_sha,
+                        "decision_sha": decision_sha,
+                    },
+                ).scalar_one()
+        except Exception:
+            return RedirectResponse(
+                f"/reviews/{case_id}?notice=" + urllib.parse.quote("候选状态已变化，请刷新后重试。"), 303
+            )
+        return RedirectResponse(f"/reviews/{case_id}?notice=" + urllib.parse.quote("审核操作已保存。"), 303)
+
+    @app.get("/api/v1/catalog")
+    def catalog(request: Request) -> Response:
+        auth = api_auth(request)
+        if isinstance(auth, JSONResponse):
+            return auth
+        countries, diseases = catalog_rows()
+        return JSONResponse(_jsonable({"countries": countries, "diseases": diseases}))
+
+    @app.get("/api/v1/discoveries/{run_id}")
+    def discovery_api(run_id: uuid.UUID, request: Request) -> Response:
+        auth = api_auth(request)
+        if isinstance(auth, JSONResponse):
+            return auth
+        rows = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_discovery_runs_v3 WHERE discovery_run_id=:id",
+            {"id": run_id},
+        )
+        events = _rows(
+            engine,
+            "SELECT * FROM epidemic_discovery.review_discovery_events_v3 WHERE discovery_run_id=:id ORDER BY created_at,event_id",
+            {"id": run_id},
+        )
+        reused_candidates = _rows(
+            engine,
+            "SELECT candidate_id,candidate_version_id,artifact_sha256,link_reason,linked_at "
+            "FROM epidemic_discovery.discovery_run_candidate_links WHERE discovery_run_id=:id ORDER BY linked_at,id",
+            {"id": run_id},
+        )
+        return JSONResponse(
+            _jsonable({"run": rows[0] if rows else None, "events": events, "reused_candidates": reused_candidates})
+        )
+
+    @app.post("/api/v1/discoveries")
+    async def submit_discovery_api(request: Request) -> Response:
+        auth = api_auth(request)
+        if isinstance(auth, JSONResponse):
+            return auth
+        body = await request.json()
+        allowed = {
+            "country_iso3",
+            "disease_id",
+            "desired_metrics",
+            "time_window_kind",
+            "preferred_source_tiers",
+            "language_preferences",
+            "max_candidates",
+        }
+        if set(body) != allowed:
+            return JSONResponse({"error": "INVALID_REQUEST"}, 422)
+        try:
+            with engine.begin() as connection:
+                run_id = connection.execute(
+                    text(
+                        "SELECT epidemic_discovery.submit_structured_discovery(:country,:disease,:metrics,:window,:tiers,:languages,:maximum)"
+                    ),
+                    {
+                        "country": body["country_iso3"],
+                        "disease": uuid.UUID(body["disease_id"]),
+                        "metrics": body["desired_metrics"],
+                        "window": body["time_window_kind"],
+                        "tiers": body["preferred_source_tiers"],
+                        "languages": body["language_preferences"],
+                        "maximum": int(body["max_candidates"]),
+                    },
+                ).scalar_one()
+        except (ValueError, TypeError):
+            return JSONResponse({"error": "INVALID_REQUEST"}, 422)
+        return JSONResponse(
+            {"discovery_run_id": str(run_id), "state": "QUEUED", "review_url": f"/discoveries/{run_id}"}, 202
+        )
+
+    @app.post("/api/v1/review-cases/{case_id}/mapping")
+    async def save_mapping(case_id: uuid.UUID, request: Request) -> Response:
+        auth = api_auth(request)
+        if isinstance(auth, JSONResponse):
+            return auth
+        if not origin_ok(request, auth[1], request.headers.get("x-csrf-token", "")):
+            return JSONResponse({"error": "CSRF_REJECTED"}, 403)
+        body = await request.json()
+        try:
+            with engine.begin() as connection:
+                revision = connection.execute(
+                    text("SELECT epidemic_discovery.save_mapping_adjustment(:case,:revision,CAST(:fields AS jsonb))"),
+                    {"case": case_id, "revision": int(body["expected_revision"]), "fields": json.dumps(body["fields"])},
+                ).scalar_one()
+        except (KeyError, ValueError, TypeError):
+            return JSONResponse({"error": "INVALID_MAPPING"}, 422)
+        return JSONResponse({"status": "SAVED", "new_revision": revision, "formal_rows_written": False})
+
+    install_p1_9_routes(app, engine, sessions)
+    install_p1_10_routes(app, engine, sessions)
+    install_p1_11_routes(app, engine, sessions)
+    install_p1_12_routes(app, engine, sessions)
+    return app

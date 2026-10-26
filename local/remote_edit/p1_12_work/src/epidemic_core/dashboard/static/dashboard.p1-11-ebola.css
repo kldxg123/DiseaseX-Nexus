@@ -1,0 +1,95 @@
+body {
+  max-width: 1400px;
+  margin: auto;
+  padding: 20px;
+  overflow-x: hidden;
+  color: #172033;
+  background: #f8fafc;
+  font-family: system-ui, sans-serif;
+}
+
+header,
+.source-card,
+.notice,
+.monitor {
+  margin: 14px 0;
+  padding: 18px;
+  border: 1px solid #d8dee9;
+  border-radius: 14px;
+  background: white;
+}
+
+.monitor {
+  overflow: hidden;
+}
+
+.warning {
+  padding: 14px;
+  border-left: 6px solid #d97706;
+  background: #fff4e5;
+}
+
+.three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.three article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+svg {
+  width: 100%;
+  height: auto;
+}
+
+.table-wrap {
+  max-width: 100%;
+  max-height: 620px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+th,
+td {
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+}
+
+code {
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.small {
+  color: #475569;
+  font-size: 12px;
+}
+
+pre {
+  padding: 12px;
+  background: #f1f5f9;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 12px;
+  }
+
+  .three {
+    grid-template-columns: 1fr;
+  }
+}

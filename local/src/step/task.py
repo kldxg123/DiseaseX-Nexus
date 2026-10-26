@@ -1,0 +1,18 @@
+from __future__ import annotations
+
+TASKS = [
+    "T_COLLECT_CASES",
+    "T_COLLECT_WEATHER",
+    "T_COLLECT_ECOLOGY",
+    "T_COLLECT_MOBILITY",
+    "T_GEO_ALIGN",
+    "T_BUILD_FEATURES",
+    "T_BUILD_LABELS",
+    "T_TRAIN_BASELINE",
+    "T_TRAIN_LORA",
+    "T_INFER_TREND",
+    "T_EVALUATE_BACKTEST",
+    "T_UPDATE_EXPERIENCE",
+    "T_PROMOTE_ADAPTER",
+    "T_ROLLBACK_ADAPTER",
+]

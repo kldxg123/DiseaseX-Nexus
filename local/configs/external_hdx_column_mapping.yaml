@@ -1,0 +1,64 @@
+version: 1
+defaults:
+  needs_manual_review: false
+  allow_unclear_semantics: false
+  unknown_metric_policy: block
+files:
+  ebola_cases_2014__ebola_data_db_format_csv.csv:
+    source_scope: west_africa_2014_2016
+    usage: validation_candidate
+    default_is_cumulative: true
+    duplicate_policy: validation_only_not_additive
+    metric_source: Indicator
+    value_source: value
+  guinea_ebola_2021_cumulative_cases_national__guinea_ebola_national_2021_hera_csv.csv:
+    source_scope: guinea_2021_context
+    usage: external_test_candidate
+    default_is_cumulative: true
+    duplicate_policy: add_if_no_original_overlap
+  guinea_ebola_2021_subnational_cases__guinea_ebola_subnational_2021_hera_csv.csv:
+    source_scope: guinea_2021_context
+    usage: external_test_candidate
+    default_is_cumulative: true
+    duplicate_policy: add_if_no_original_overlap
+metric_rules:
+  - match_contains: ["death", "deaths"]
+    metric_type: death
+    case_status: death
+    allowed_for_label: true
+  - match_contains: ["confirmed"]
+    metric_type: case
+    case_status: confirmed
+    allowed_for_label: true
+  - match_contains: ["probable"]
+    metric_type: case
+    case_status: probable
+    allowed_for_label: true
+  - match_contains: ["suspected"]
+    metric_type: case
+    case_status: suspected
+    allowed_for_label: true
+  - match_contains: ["contact"]
+    metric_type: contact
+    case_status: contact
+    allowed_for_label: false
+  - match_contains: ["hospital"]
+    metric_type: hospitalized
+    case_status: hospitalized
+    allowed_for_label: false
+  - match_contains: ["recover"]
+    metric_type: recovery
+    case_status: recovered
+    allowed_for_label: false
+  - match_contains: ["vaccin"]
+    metric_type: intervention_vaccination
+    case_status: vaccinated
+    allowed_for_label: false
+  - match_contains: ["case", "cases"]
+    metric_type: case
+    case_status: unspecified_case
+    allowed_for_label: true
+usage_defaults:
+  west_africa_2014_2016: validation_candidate
+  guinea_2021_context: external_test_candidate
+  unknown: background_only

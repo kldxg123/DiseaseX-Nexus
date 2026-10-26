@@ -1,9 +1,9 @@
 {
-  "code_files": 946,
-  "data_files": 16575,
-  "unique_blobs": 6762,
-  "asset_parts": 10,
-  "asset_bytes": 5029568719,
+  "code_files": 7137,
+  "data_files": 37260,
+  "unique_blobs": 18893,
+  "asset_parts": 12,
+  "asset_bytes": 5649223867,
   "database": {
     "status": "exported",
     "business_tables": 174,
@@ -17,6 +17,7 @@
     "source_cluster_bytes": 1300224783
   },
   "changed_during_copy": 0,
-  "python_reference_only": 17,
-  "prepared_at": "2026-10-26T07:36:22.861767+00:00"
+  "python_reference_only": 1,
+  "prepared_at": "2026-10-26T07:36:22.861767+00:00",
+  "local_snapshot_included": true
 }

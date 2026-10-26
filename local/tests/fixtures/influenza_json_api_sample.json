@@ -1,0 +1,16 @@
+{
+  "records": [
+    {"epiweek": "2025-W01", "region": "US", "ili": 3.2, "positive_tests": 120, "total_tests": 1200},
+    {"epiweek": "2025-W02", "region": "US", "ili": 3.4, "positive_tests": 132, "total_tests": 1250},
+    {"epiweek": "2025-W03", "region": "US", "ili": 3.9, "positive_tests": 158, "total_tests": 1310},
+    {"epiweek": "2025-W04", "region": "US", "ili": 4.1, "positive_tests": 174, "total_tests": 1360},
+    {"epiweek": "2025-W05", "region": "Region 2", "ili": 4.6, "positive_tests": 96, "total_tests": 780},
+    {"epiweek": "2025-W06", "region": "Region 2", "ili": 4.8, "positive_tests": 105, "total_tests": 810},
+    {"epiweek": "2025-W07", "region": "Region 4", "ili": 5.1, "positive_tests": 118, "total_tests": 840},
+    {"epiweek": "2025-W08", "region": "Region 4", "ili": 5.5, "positive_tests": 131, "total_tests": 870},
+    {"epiweek": "2025-W09", "region": "Region 5", "ili": 5.3, "positive_tests": 126, "total_tests": 860},
+    {"epiweek": "2025-W10", "region": "Region 5", "ili": 5.0, "positive_tests": 119, "total_tests": 850},
+    {"epiweek": "2025-W11", "region": "Region 7", "ili": 4.7, "positive_tests": 101, "total_tests": 790},
+    {"region": "Region 7", "ili": 4.3, "positive_tests": 88}
+  ]
+}

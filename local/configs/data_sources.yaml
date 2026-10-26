@@ -1,0 +1,16 @@
+{
+  "cases": {
+    "local_files": ["data/ebola_africa.csv", "data/ebola_data_db_format.csv"],
+    "required_granularity": ["daily", "weekly"]
+  },
+  "weather": {
+    "openmeteo": {
+      "daily": ["temperature_2m_mean", "temperature_2m_max", "temperature_2m_min", "precipitation_sum"],
+      "hourly": ["relative_humidity_2m", "dew_point_2m", "wet_bulb_temperature_2m", "soil_moisture_0_to_7cm", "soil_moisture_7_to_28cm", "wind_speed_10m"]
+    }
+  },
+  "mobility": {
+    "p0a": ["gravity_flow", "infectious_inflow_index"],
+    "p1": ["WorldPop", "OSM/Geofabrik", "GTMD", "WorldBank"]
+  }
+}

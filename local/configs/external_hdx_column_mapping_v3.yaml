@@ -1,0 +1,69 @@
+version: 1
+stage: P1b
+default_policy:
+  block_training_if_metric_semantics_unclear: true
+  block_training_if_cumulative_incident_unclear: true
+  cumulative_to_incident_allowed: true
+  first_cumulative_observation_policy: flag_and_do_not_use_as_incident_delta
+
+file_rules:
+  - name_contains: ["drc", "ebola"]
+    source_scope: drc_2018_2020
+    default_usage: train_candidate
+    needs_manual_review: false
+  - name_contains: ["uganda", "ebola"]
+    source_scope: uganda_2022
+    default_usage: train_candidate
+    needs_manual_review: false
+  - name_contains: ["guinea", "2021"]
+    source_scope: guinea_2021
+    default_usage: external_test_locked
+    needs_manual_review: false
+  - name_contains: ["west", "africa"]
+    source_scope: west_africa_2014_2016
+    default_usage: cross_check_only
+    needs_manual_review: false
+
+column_aliases:
+  date: [date, report_date, epi_date, week_start, week_end, reporting_date, Date, "Date of report"]
+  country: [country, Country, iso3, country_name, pays]
+  adm1: [adm1, province, region, state, district, prefecture, county, ADM1_NAME, admin1, Province]
+  adm2: [adm2, health_zone, zone_de_sante, health zone, subcounty, territory, chiefdom, ADM2_NAME, admin2]
+  metric: [indicator, Indicator, variable, metric, status, measure, category]
+  value: [value, Value, cases, deaths, count, number, total, cumulative_cases, new_cases]
+
+metric_rules:
+  - match_contains: [confirmed, case]
+    metric_type: case
+    case_status: confirmed
+    allowed_for_label: true
+  - match_contains: [suspected, case]
+    metric_type: case
+    case_status: suspected
+    allowed_for_label: false
+  - match_contains: [probable, case]
+    metric_type: case
+    case_status: probable
+    allowed_for_label: false
+  - match_contains: [death]
+    metric_type: death
+    case_status: confirmed_or_total
+    allowed_for_label: false
+  - match_contains: [cumulative, cases]
+    metric_type: case
+    case_status: confirmed_or_total
+    allowed_for_label: true
+    is_cumulative: true
+  - match_contains: [new, cases]
+    metric_type: case
+    case_status: confirmed_or_total
+    allowed_for_label: true
+    is_incident: true
+
+scope_overrides:
+  guinea_2021:
+    usage: external_test_locked
+    training_allowed: false
+  west_africa_2014_2016:
+    usage: cross_check_only
+    training_allowed: false

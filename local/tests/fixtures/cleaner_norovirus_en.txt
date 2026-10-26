@@ -1,0 +1,4 @@
+On January 31, 2025, a local public health bulletin in the United States
+reported a norovirus outbreak at a school campus. Officials described
+12 cases, 2 outbreaks, 1 death, 4 hospitalizations, 100 tests, and
+8.5% positivity. This fictional fixture is for parser tests only.

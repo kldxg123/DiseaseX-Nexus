@@ -1,0 +1,232 @@
+from __future__ import annotations
+
+import uuid
+from pathlib import Path
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from epidemic_core.api.dependencies import get_session
+from epidemic_core.api.schemas import RetrievalResponse, StartRetrievalBody
+from epidemic_core.db.models.tables import (
+    DatasetSnapshot,
+    DataSource,
+    Disease,
+    NormalizationRun,
+    QueryRequest,
+    RawArtifact,
+    RetrievalRun,
+    RetrievalRunEvent,
+    RetrievalWindowResolution,
+    SourceFetch,
+)
+from epidemic_core.normalization.contract import ContractError, load_contract
+from epidemic_core.normalization.dengue import load_dengue_contract
+from epidemic_core.normalization.service import NormalizationError, NormalizationService
+from epidemic_core.retrieval.registry import NoCompatibleSource, RegistryError, load_registry, spec_for_source
+from epidemic_core.retrieval.service import RetrievalError, RetrievalService
+
+router = APIRouter(tags=["retrievals"])
+SessionDep = Annotated[Session, Depends(get_session)]
+REGISTRY = Path("USER_HOME/autodl-tmp/epidemic-openclaw/reference/data_sources.v2.json")
+REFERENCE_ROOT = REGISTRY.parent
+
+
+def response_for(
+    session: Session, run: RetrievalRun, created: bool = False, retried: bool = False
+) -> RetrievalResponse:
+    query = session.get(QueryRequest, run.query_request_id)
+    source = session.get(DataSource, run.source_id)
+    if query is None or source is None:
+        raise HTTPException(status_code=500, detail={"code": "INTERNAL_ERROR", "message": "Internal error"})
+    disease = session.get(Disease, query.disease_id)
+    _, _, specs = load_registry(REGISTRY)
+    spec = spec_for_source(specs, source.source_key)
+    fetch = (
+        session.execute(
+            select(SourceFetch).where(SourceFetch.retrieval_run_id == run.id).order_by(SourceFetch.requested_at.desc())
+        )
+        .scalars()
+        .first()
+    )
+    artifact = session.get(RawArtifact, fetch.artifact_id) if fetch and fetch.artifact_id else None
+    normalization = (
+        session.execute(
+            select(NormalizationRun)
+            .where(NormalizationRun.retrieval_run_id == run.id)
+            .order_by(NormalizationRun.created_at.desc())
+        )
+        .scalars()
+        .first()
+    )
+    snapshot = (
+        session.get(DatasetSnapshot, normalization.dataset_snapshot_id)
+        if normalization and normalization.dataset_snapshot_id
+        else None
+    )
+    event = session.scalar(
+        select(RetrievalRunEvent)
+        .where(RetrievalRunEvent.retrieval_run_id == run.id, RetrievalRunEvent.event_code == "RAW_ARTIFACT_STORED")
+        .order_by(RetrievalRunEvent.id.desc())
+    )
+    event_details = event.details if event else {}
+    feature = snapshot.feature_spec if snapshot else {}
+    window = session.scalar(
+        select(RetrievalWindowResolution).where(RetrievalWindowResolution.retrieval_run_id == run.id)
+    )
+    dengue = source.source_key == "who_dengue_global_validated"
+    if run.status != "succeeded":
+        pipeline = "retrieval_" + run.status
+    elif normalization is None:
+        pipeline = "normalization_not_enqueued"
+    elif normalization.status == "succeeded":
+        pipeline = "ready" if snapshot else "no_observations"
+    else:
+        pipeline = "normalization_" + normalization.status
+    normalized = bool(normalization and normalization.status == "succeeded")
+    return RetrievalResponse(
+        retrieval_run_id=run.id,
+        query_id=query.id,
+        source_key=source.source_key,
+        status=run.status,
+        retrieval_status=run.status,
+        attempt_number=run.attempt_number,
+        created=created,
+        retried=retried,
+        created_at=run.created_at,
+        started_at=run.started_at,
+        finished_at=run.finished_at,
+        error_code=run.error_code,
+        not_modified=bool(fetch and fetch.http_status == 304),
+        artifact_scope=spec.artifact_scope,
+        requested_country_alpha2=query.country_alpha2,
+        requested_disease_slug=disease.slug if disease else "unknown",
+        requested_start_date=query.start_date,
+        requested_end_date=query.end_date,
+        time_window_kind=query.time_window_kind,
+        resolved_start=window.resolved_start if window else query.start_date,
+        resolved_end=window.resolved_end if window else query.end_date,
+        source_declared_max_date=window.source_declared_max_date if window else None,
+        source_data_through=window.source_data_through if window else None,
+        source_http_last_modified=window.source_http_last_modified if window else None,
+        retrieved_at=window.retrieved_at if window else None,
+        reporting_lag_days=window.reporting_lag_days if window else None,
+        freshness_status=window.freshness_status if window else "UNKNOWN",
+        cases_new_data_through=window.cases_new_data_through if window else None,
+        deaths_new_data_through=window.deaths_new_data_through if window else None,
+        cases_cumulative_data_through=window.cases_cumulative_data_through if window else None,
+        deaths_cumulative_data_through=window.deaths_cumulative_data_through if window else None,
+        cases_freshness_status=window.cases_freshness_status if window else "NO_DATA",
+        deaths_freshness_status=window.deaths_freshness_status if window else "NO_DATA",
+        observed_period_count=window.observed_period_count if window else 0,
+        expected_period_count=window.expected_period_count if window else 0,
+        missing_period_count=window.missing_period_count if window else 0,
+        coverage_ratio=float(window.coverage_ratio) if window else 0.0,
+        dashboard_ready=snapshot is not None,
+        dashboard_url=f"http://127.0.0.1:8020/?snapshot={snapshot.id}" if snapshot else None,
+        artifact_sha256=artifact.sha256 if artifact else None,
+        artifact_byte_size=artifact.byte_size if artifact else None,
+        artifact_media_type=artifact.media_type if artifact else None,
+        attribution=spec.attribution,
+        source_page_url=spec.source_page_url,
+        terms_url=spec.terms_url,
+        license_summary=spec.license_expression,
+        query_filter_applied=dengue or normalized,
+        normalized=normalized,
+        normalized_observations_created=bool(normalization and normalization.normalized_observation_count),
+        normalization_run_id=normalization.id if normalization else None,
+        normalization_status=normalization.status if normalization else None,
+        pipeline_status=pipeline,
+        result_code=normalization.result_code if normalization else None,
+        selected_source_rows=normalization.selected_source_rows if normalization else 0,
+        normalized_observation_count=normalization.normalized_observation_count if normalization else 0,
+        missing_value_count=normalization.missing_value_count if normalization else 0,
+        quality_warning_count=normalization.warning_count if normalization else 0,
+        dataset_snapshot_id=snapshot.id if snapshot else None,
+        snapshot_status="ready" if snapshot else "absent",
+        snapshot_row_count=snapshot.row_count if snapshot else 0,
+        snapshot_content_sha256=snapshot.content_sha256 if snapshot else None,
+        snapshot_schema_version=snapshot.snapshot_schema_version if snapshot else None,
+        training_format_ready=snapshot is not None,
+        forecast_readiness_assessed=False,
+        prediction_performed=False,
+        server_filter_applied=dengue,
+        odata_count=event_details.get("odata_count"),
+        returned_row_count=event_details.get("returned_row_count"),
+        date_types=list(feature.get("date_types", event_details.get("date_types", []))),
+        all_null_source_row_count=int(feature.get("all_null_source_row_count", 0)),
+        future_empty_placeholder_count=int(feature.get("future_empty_placeholder_count", 0)),
+        mixed_temporal_granularity=bool(feature.get("mixed_temporal_granularity", False)),
+        normalized_fields=list(feature.get("metric_mapping", {}).keys()),
+        preserved_raw_not_normalized=list(feature.get("preserved_raw_not_normalized", [])),
+    )
+
+
+@router.post("/v1/queries/{query_id}/retrievals", response_model=RetrievalResponse, status_code=202)
+def start_retrieval(
+    query_id: uuid.UUID, _body: StartRetrievalBody, response: Response, session: SessionDep
+) -> RetrievalResponse:
+    try:
+        with session.begin_nested():
+            result = RetrievalService(REGISTRY).enqueue(session, query_id)
+            normalization_retried = False
+            if result.run.status == "succeeded":
+                existing = session.execute(
+                    select(NormalizationRun).where(NormalizationRun.retrieval_run_id == result.run.id)
+                ).scalar_one_or_none()
+                if existing is not None:
+                    normalization_retried = NormalizationService.retry_failed(session, result.run.id)
+                else:
+                    fetch = (
+                        session.execute(
+                            select(SourceFetch)
+                            .where(SourceFetch.retrieval_run_id == result.run.id, SourceFetch.artifact_id.is_not(None))
+                            .order_by(SourceFetch.requested_at.desc())
+                        )
+                        .scalars()
+                        .first()
+                    )
+                    artifact = session.get(RawArtifact, fetch.artifact_id) if fetch and fetch.artifact_id else None
+                    if fetch is None or artifact is None:
+                        raise NormalizationError("ARTIFACT_INTEGRITY_ERROR")
+                    source = session.get(DataSource, result.run.source_id)
+                    if source and source.source_key == "who_dengue_global_validated":
+                        query = session.get(QueryRequest, result.run.query_request_id)
+                        if query is None:
+                            raise NormalizationError("QUERY_NOT_FOUND")
+                        dengue_contract, _iso3, _label = load_dengue_contract(
+                            session, REFERENCE_ROOT, query.country_alpha2
+                        )
+                        versions = dengue_contract.versions
+                    else:
+                        covid_contract, _mapping = load_contract(session, REFERENCE_ROOT)
+                        versions = covid_contract.versions
+                    NormalizationService.enqueue(session, result.run, fetch, artifact.sha256, versions)
+        session.commit()
+    except NoCompatibleSource as exc:
+        raise HTTPException(
+            status_code=422, detail={"code": "NO_COMPATIBLE_SOURCE", "message": "No compatible source"}
+        ) from exc
+    except RegistryError as exc:
+        raise HTTPException(
+            status_code=503, detail={"code": "SOURCE_REGISTRY_UNAVAILABLE", "message": "Source registry unavailable"}
+        ) from exc
+    except (RetrievalError, NormalizationError, ContractError) as exc:
+        code = str(exc)
+        status = 404 if code == "QUERY_NOT_FOUND" else 409
+        raise HTTPException(
+            status_code=status, detail={"code": code, "message": "Pipeline could not be started"}
+        ) from exc
+    if not result.created:
+        response.status_code = 200
+    return response_for(session, result.run, result.created, result.retried or normalization_retried)
+
+
+@router.get("/v1/retrievals/{retrieval_run_id}", response_model=RetrievalResponse)
+def get_retrieval(retrieval_run_id: uuid.UUID, session: SessionDep) -> RetrievalResponse:
+    run = session.get(RetrievalRun, retrieval_run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail={"code": "RETRIEVAL_NOT_FOUND", "message": "Retrieval not found"})
+    return response_for(session, run)

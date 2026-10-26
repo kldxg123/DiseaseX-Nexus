@@ -1,0 +1,58 @@
+{
+  "base_model": "Qwen/Qwen2.5-7B-Instruct",
+  "base_model_dir": "models/Qwen2.5-7B-Instruct",
+  "local_model_dir": "models/Qwen2.5-7B-Instruct",
+  "train_file": "data/processed/qwen25_sft_train_v2_balanced.jsonl",
+  "candidate_v2_train_file": "data/processed/qwen25_sft_train_v2.jsonl",
+  "original_train_file": "data/processed/qwen25_sft_train.jsonl",
+  "validation_file": "data/processed/qwen25_sft_val.jsonl",
+  "test_file": "data/processed/qwen25_sft_test.jsonl",
+  "output_root": "lora_weights/ebola_qwen25_step/candidates",
+  "dryrun_output_root": "lora_weights/ebola_qwen25_step/dryruns",
+  "run_id_prefix": "qwen25_lora_v2",
+  "selected_candidate_config": "v2b_rebalance_plus_prompt_instruction",
+  "train_from": "base_model",
+  "continue_from_adapter": null,
+  "use_4bit": true,
+  "bnb_4bit_quant_type": "nf4",
+  "bnb_4bit_compute_dtype": "bfloat16",
+  "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+  "max_seq_length": 4096,
+  "per_device_train_batch_size": 1,
+  "per_device_eval_batch_size": 1,
+  "gradient_accumulation_steps": 8,
+  "gradient_checkpointing": true,
+  "num_train_epochs": 3,
+  "warmup_ratio": 0.03,
+  "weight_decay": 0.0,
+  "logging_steps": 10,
+  "eval_steps": 100,
+  "save_strategy": "epoch",
+  "eval_strategy": "steps",
+  "save_total_limit": 2,
+  "bf16": true,
+  "fp16": false,
+  "seed": 43,
+  "minority_oversample_max_ratio": 2.5,
+  "candidate_configs": {
+    "v2a_rebalance_only": {
+      "description": "Use qwen25_sft_train_v2_balanced.jsonl with original prompt style plus train-only balancing.",
+      "lora_r": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.0001
+    },
+    "v2b_rebalance_plus_prompt_instruction": {
+      "description": "Use qwen25_sft_train_v2_balanced.jsonl with up-recall instruction rewrites.",
+      "lora_r": 32,
+      "lora_alpha": 64,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.0002
+    }
+  },
+  "generation": {
+    "do_sample": false,
+    "temperature": 0,
+    "max_new_tokens": 512
+  }
+}

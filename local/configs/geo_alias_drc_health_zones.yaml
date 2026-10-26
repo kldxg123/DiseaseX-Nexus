@@ -1,0 +1,95 @@
+version: 1
+thresholds:
+  min_health_zone_mapping_coverage: 0.95
+  fuzzy_high_threshold: 0.88
+  fuzzy_low_threshold: 0.75
+
+country:
+  name: Democratic Republic of the Congo
+  iso3: COD
+
+health_zones:
+  - health_zone_standard: Beni
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Beni
+    lat: 0.49
+    lon: 29.47
+    aliases: [Beni, Zone de sante de Beni, Beni HZ]
+  - health_zone_standard: Mabalako
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Mabalako
+    lat: 0.27
+    lon: 29.02
+    aliases: [Mabalako, Mabalako HZ, Mabalako Health Zone]
+  - health_zone_standard: Butembo
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Butembo
+    lat: 0.15
+    lon: 29.29
+    aliases: [Butembo, Butembo HZ, Zone de sante de Butembo]
+  - health_zone_standard: Katwa
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Butembo
+    lat: 0.12
+    lon: 29.3
+    aliases: [Katwa, Katwa HZ, Zone de sante de Katwa]
+  - health_zone_standard: Oicha
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Beni
+    lat: 0.7
+    lon: 29.52
+    aliases: [Oicha, Oicha HZ, Oicha Health Zone]
+  - health_zone_standard: Kalunguta
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Beni
+    lat: 0.37
+    lon: 29.32
+    aliases: [Kalunguta, Kalunguta HZ]
+  - health_zone_standard: Mandima
+    province_standard: Ituri
+    adm1: Ituri
+    adm2: Mambasa
+    lat: 1.36
+    lon: 29.13
+    aliases: [Mandima, Mandima HZ, Zone de sante de Mandima]
+  - health_zone_standard: Komanda
+    province_standard: Ituri
+    adm1: Ituri
+    adm2: Irumu
+    lat: 1.33
+    lon: 29.56
+    aliases: [Komanda, Komanda HZ]
+  - health_zone_standard: Mangina
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Beni
+    lat: 0.13
+    lon: 29.25
+    aliases: [Mangina, Mangina HZ]
+  - health_zone_standard: Tchomia
+    province_standard: Ituri
+    adm1: Ituri
+    adm2: Djugu
+    lat: 1.58
+    lon: 30.93
+    aliases: [Tchomia, Tchomia HZ, Chomia]
+  - health_zone_standard: Bunia
+    province_standard: Ituri
+    adm1: Ituri
+    adm2: Irumu
+    lat: 1.57
+    lon: 30.24
+    aliases: [Bunia, Bunia HZ]
+  - health_zone_standard: Musienene
+    province_standard: North Kivu
+    adm1: North Kivu
+    adm2: Lubero
+    lat: -0.05
+    lon: 29.15
+    aliases: [Musienene, Musienene HZ]

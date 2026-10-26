@@ -1,0 +1,11 @@
+{
+  "outbreaks": [
+    {
+      "state": "Fixture State",
+      "setting": "School",
+      "etiology": "Norovirus",
+      "illnesses": "25",
+      "year": "2026"
+    }
+  ]
+}

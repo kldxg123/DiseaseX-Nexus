@@ -1,0 +1,31 @@
+disease_scope: ebola_only
+prototype_thresholds:
+  outbreak_event_count_min: 3
+  positive_region_week_count_min: 30
+  negative_to_positive_min: 3.0
+  countries_min: 2
+  feature_missing_rate_max: 0.40
+formal_thresholds:
+  outbreak_event_count_min: 15
+  positive_region_week_count_min: 100
+  negative_to_positive_min: 3.0
+  countries_min: 3
+  feature_missing_rate_max: 0.25
+negative_sampling:
+  preferred_ratio: 3
+  max_ratio: 5
+  matching: [country_or_neighbor, season, population_bin, geography_type, observation_period]
+model_order: [logistic_regression, random_forest, xgboost, lightgbm]
+split_policy:
+  preferred: outbreak_level
+  fallback: time_based_for_feasibility_only
+metrics:
+  - pr_auc
+  - roc_auc
+  - macro_f1
+  - balanced_accuracy
+  - recall_at_k
+  - precision_at_k
+  - false_alarms_per_100_region_weeks
+  - event_recall
+  - lead_time

@@ -1,0 +1,25 @@
+{
+  "articles": [
+    {
+      "url": "https://local-news.invalid/health/norovirus-outbreak",
+      "title": "Norovirus outbreak reported in schools",
+      "sourceCommonName": "Local News",
+      "language": "English",
+      "sourceCountry": "US"
+    },
+    {
+      "url": "https://www.local-news.invalid/health/stomach-flu-update",
+      "title": "Stomach flu cases rise",
+      "sourceCommonName": "Local News",
+      "language": "English",
+      "sourceCountry": "US"
+    },
+    {
+      "url": "https://public-radio.invalid/news/acute-gastroenteritis",
+      "title": "Acute gastroenteritis cluster monitored",
+      "sourceCommonName": "Public Radio",
+      "language": "English",
+      "sourceCountry": "US"
+    }
+  ]
+}

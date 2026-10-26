@@ -1,0 +1,84 @@
+# Secrets and local configuration
+服务器信息*.txt
+.env
+.env.local
+.env.*
+.env.*.local
+*.env
+!.env.example
+服务器信息.txt
+*server*info*.txt
+!tests/fixtures/fake_server_info.txt
+*服务器*信息*.txt
+*.pem
+*.key
+*.token
+*.secret
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa
+id_ed25519
+known_hosts
+*_token*
+*token*
+*secret*
+*credential*
+credentials/
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Logs and runtime files
+logs/
+*.log
+*.pid
+*.tmp
+tmp/
+temp/
+
+# Local databases and queues
+*.sqlite
+*.sqlite3
+*.db
+*.duckdb
+postgres-data/
+redis-data/
+.minio/
+mlruns/
+
+# Data and generated artifacts
+data/raw/
+data/processed/
+data/cache/
+data/downloads/
+models/
+artifacts/
+reports/generated/
+
+# Docker and local overrides
+docker-compose.override.yml
+.docker/
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

@@ -1,0 +1,46 @@
+{
+  "schema_version": "m2_m1_backtest_results_v1",
+  "results": [
+    {
+      "task_id": "influenza_7d_moving_average_baseline_minimal",
+      "disease": "influenza",
+      "country": "United States",
+      "prediction_target": "outbreak_or_case_trend",
+      "horizon_days": 7,
+      "model_family": "baseline",
+      "model_name": "moving_average",
+      "benchmark_strategy": "moving_average",
+      "feature_groups": ["epidemiological_lag"],
+      "status": "executed",
+      "metrics": {
+        "regression": {"n": 4, "mae": 1.2, "rmse": 1.5, "mape": 0.06, "smape": 0.058, "interval_coverage": 0.75},
+        "classification": {"n": 4, "brier_score": 0.2, "f1_score": 0.8, "auroc": 0.75, "pr_auc": 0.7, "threshold": 0.5}
+      },
+      "training_rows": 8,
+      "test_rows": 4,
+      "rolling_folds": 4,
+      "warnings": [],
+      "evidence_source": "fixture",
+      "requires_human_review": true
+    },
+    {
+      "task_id": "influenza_7d_arima_optional",
+      "disease": "influenza",
+      "country": "United States",
+      "prediction_target": "outbreak_or_case_trend",
+      "horizon_days": 7,
+      "model_family": "statistical_time_series",
+      "model_name": "arima_or_sarima",
+      "benchmark_strategy": "skip",
+      "feature_groups": ["epidemiological_lag"],
+      "status": "skipped",
+      "metrics": {},
+      "training_rows": 0,
+      "test_rows": 0,
+      "rolling_folds": 0,
+      "warnings": ["skipped_optional_dependency"],
+      "evidence_source": "fixture",
+      "requires_human_review": true
+    }
+  ]
+}

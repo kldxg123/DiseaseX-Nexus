@@ -1,0 +1,691 @@
+{
+  "schema_version": "kg.paper_benchmark.v2",
+  "benchmark_id": "rsos_mpox_2024_method_transfer_sgp_dengue.v1",
+  "is_primary_benchmark": true,
+  "replication_type": "METHOD_TRANSFER_REPLICATION",
+  "evaluation_identity": "RETROSPECTIVE_METHOD_TRANSFER_BENCHMARK_SHADOW_ONLY",
+  "is_fresh_heldout": false,
+  "paper": {
+    "title": "Evaluating the forecasting performance of ensemble sub-epidemic frameworks and other time series models for the 2022–2023 mpox epidemic",
+    "authors": "Bleichrodt, Luo, Kirpich & Chowell",
+    "year": 2024,
+    "venue": "Royal Society Open Science",
+    "volume": "11",
+    "issue": "7",
+    "article_number": "240248",
+    "doi": "10.1098/rsos.240248",
+    "publisher_url": "https://royalsocietypublishing.org/doi/10.1098/rsos.240248",
+    "rank_label": "SCI JCR Q1 (2023) / Q2 (2024)，Multidisciplinary Sciences；非 CCF 会议",
+    "pdf_identity": "正式发表版（VOR，Europe PMC PMC11285753 渲染，CC-BY 4.0）",
+    "pdf_sha256": "589764fb45f9e40cb5cbbe5d7f554decdbb122f7960a94a33fce4dba468bfd7e"
+  },
+  "task": {
+    "paper_disease": "mpox（论文原始对象，2022–2023，CDC/OWID 数据）",
+    "evaluation_disease": "dengue（新加坡，2012-W01 至 2019-W48，方法迁移评估序列）",
+    "metric": "cases_new",
+    "frequency": "week",
+    "horizons": "1-4 周 rolling-origin",
+    "note_zh": "论文原始 mpox 实验与本新加坡 dengue 方法迁移是两个不同数据集上的不同实验，不得混为同一数据集。"
+  },
+  "dataset": {
+    "description": "新加坡卫生部 data.gov.sg 周度登革热确诊病例（官方目录重建序列）",
+    "range": "2012-W01 至 2019-W48",
+    "rows": 412,
+    "sha256": "5efbff843186392c86862361a47c9fb15f30090d0a379b46f9e44267060afac2"
+  },
+  "split": {
+    "train_labels": 311,
+    "validation_origins": 50,
+    "test_origins": 50,
+    "validation_pairs": 200,
+    "test_pairs": 194,
+    "note_zh": "与历史 benchmark 相同的 311/50/50 标签切分；horizon 1-4；测试配对 h=1..4 为 50/49/48/47"
+  },
+  "methods": {
+    "paper_arima": {
+      "role_zh": "论文 baseline（ARIMA，11 周校准窗）",
+      "description_zh": "AICc 网格选阶，负值截 0"
+    },
+    "paper_gam": {
+      "role_zh": "论文方法（GAM 时间样条）",
+      "description_zh": "B 样条 + GCV 选 df"
+    },
+    "paper_slr": {
+      "role_zh": "论文方法（时间线性回归）",
+      "description_zh": "y~t OLS"
+    },
+    "paper_subepidemic_top": {
+      "role_zh": "论文旗舰方法构造块（sub-epidemic top）",
+      "description_zh": "GGM/GLM 非线性最小二乘 + AICc"
+    },
+    "paper_subepidemic_second": {
+      "role_zh": "论文方法（AICc 第二名）",
+      "description_zh": "含 Cthr 双波 GLM 候选"
+    },
+    "paper_subepidemic_ensemble_weighted": {
+      "role_zh": "论文加权集成",
+      "description_zh": "AICc 权重 wi∝exp(-Δi/2)"
+    },
+    "paper_subepidemic_ensemble_unweighted": {
+      "role_zh": "论文不加权集成",
+      "description_zh": "AICc 前 4 名等权"
+    },
+    "paper_prophet": {
+      "role_zh": "论文方法（Prophet）",
+      "description_zh": "prophet 1.4.0，11 周校准窗"
+    },
+    "project_kg_primary": {
+      "role_zh": "项目 KG 推荐主模型",
+      "description_zh": "lagged_count_boosting.v1 (50/0.1/10)"
+    },
+    "project_qwen_tuned": {
+      "role_zh": "项目 Qwen 受控调优",
+      "description_zh": "白名单网格验证集选出 {'n_estimators': 30, 'learning_rate': 0.2, 'min_samples_leaf': 5}"
+    },
+    "project_kg_ensemble": {
+      "role_zh": "项目组合模型",
+      "description_zh": "验证集 0.05 单纯形选权"
+    },
+    "last_value": {
+      "role_zh": "基线",
+      "description_zh": "上周值"
+    },
+    "seasonal_naive": {
+      "role_zh": "基线",
+      "description_zh": "去年同期（52 周）"
+    },
+    "rolling_mean_4": {
+      "role_zh": "基线",
+      "description_zh": "近 4 周均值"
+    }
+  },
+  "presentation_order": [
+    "paper_arima",
+    "paper_gam",
+    "paper_slr",
+    "paper_prophet",
+    "paper_subepidemic_top",
+    "paper_subepidemic_second",
+    "paper_subepidemic_ensemble_weighted",
+    "paper_subepidemic_ensemble_unweighted",
+    "project_kg_primary",
+    "project_qwen_tuned",
+    "project_kg_ensemble",
+    "last_value",
+    "seasonal_naive",
+    "rolling_mean_4"
+  ],
+  "selection": {
+    "best_overall_model": "paper_arima",
+    "best_project_model": "project_kg_ensemble",
+    "project_beats_paper_arima": false,
+    "project_beats_last_value": false,
+    "project_advantage_note_zh": "项目方法的主要优势是更高的 95% 区间覆盖率，但必须结合平均区间宽度解读（见对照表宽度列）。",
+    "best_test_model": "paper_arima",
+    "best_baseline": "last_value",
+    "qwen_params": {
+      "n_estimators": 30,
+      "learning_rate": 0.2,
+      "min_samples_leaf": 5
+    },
+    "ensemble_weights": {
+      "project_qwen_tuned": 0.75,
+      "seasonal_naive": 0.0,
+      "last_value": 0.25
+    },
+    "note_zh": "全部选择仅使用验证集 200 个配对（WAPE→RMSE→字典序）；测试集冻结后恰好评估一次。",
+    "test_evaluated_count": 1
+  },
+  "metrics": {
+    "by_model_overall": {
+      "paper_arima": {
+        "test": {
+          "n": 194.0,
+          "mae": 68.6098288814576,
+          "mse": 7451.083746736098,
+          "rmse": 86.31966025614383,
+          "wape": 0.2230653058991583,
+          "agreement_pct": 77.69346941008418,
+          "smape": 0.24586527634676875,
+          "mase": 0.3768740841905394,
+          "coverage": 0.8041237113402062,
+          "mean_width": 255.4685010903067
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 15.13502833155822,
+          "mse": 364.550222751711,
+          "rmse": 19.093198337410918,
+          "wape": 0.24500248209725972,
+          "agreement_pct": 75.49975179027403,
+          "smape": 0.25706352362932855,
+          "mase": 0.0776028712339085,
+          "coverage": 0.905,
+          "mean_width": 67.75995030437228
+        }
+      },
+      "paper_gam": {
+        "test": {
+          "n": 194.0,
+          "mae": 2758.9474700476035,
+          "mse": 80571101.45030433,
+          "rmse": 8976.140676833465,
+          "wape": 8.969931442755742,
+          "agreement_pct": 0.0,
+          "smape": 1.138481142054889,
+          "mase": 15.154910281156592,
+          "coverage": 0.17010309278350516,
+          "mean_width": 93.99615733145276
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 414.64862822933765,
+          "mse": 5280910.334465755,
+          "rmse": 2298.023136190268,
+          "wape": 6.712240036088023,
+          "agreement_pct": 0.0,
+          "smape": 1.1444547451912,
+          "mase": 2.126056416868644,
+          "coverage": 0.215,
+          "mean_width": 41.557288798255
+        }
+      },
+      "paper_slr": {
+        "test": {
+          "n": 194.0,
+          "mae": 109.3514995313965,
+          "mse": 19401.363134957846,
+          "rmse": 139.28877605520785,
+          "wape": 0.3555252372899434,
+          "agreement_pct": 64.44747627100567,
+          "smape": 0.4319964226398012,
+          "mase": 0.600668255738721,
+          "coverage": 0.5515463917525774,
+          "mean_width": 219.12867535971625
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 17.92227272727273,
+          "mse": 466.4720537190084,
+          "rmse": 21.59796411051302,
+          "wape": 0.29012177624075647,
+          "agreement_pct": 70.98782237592435,
+          "smape": 0.3096242952222944,
+          "mase": 0.09189410103537907,
+          "coverage": 0.87,
+          "mean_width": 67.80128565262125
+        }
+      },
+      "paper_subepidemic_top": {
+        "test": {
+          "n": 194.0,
+          "mae": 135.63483534103116,
+          "mse": 25655.498927481032,
+          "rmse": 160.17334025199398,
+          "wape": 0.4409780133427191,
+          "agreement_pct": 55.9021986657281,
+          "smape": 0.702359665281801,
+          "mase": 0.7450427320232045,
+          "coverage": 0.4793814432989691,
+          "mean_width": 190.35850761076597
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 29.970042389184187,
+          "mse": 1245.136581112709,
+          "rmse": 35.2864928990217,
+          "wape": 0.48514839966303824,
+          "agreement_pct": 51.485160033696175,
+          "smape": 0.6647724854463871,
+          "mase": 0.15366745865636527,
+          "coverage": 0.465,
+          "mean_width": 47.90313989387796
+        }
+      },
+      "project_kg_primary": {
+        "test": {
+          "n": 194.0,
+          "mae": 76.4764946701031,
+          "mse": 9514.948660018597,
+          "rmse": 97.54459831286711,
+          "wape": 0.24864152783643373,
+          "agreement_pct": 75.13584721635662,
+          "smape": 0.2777152801613711,
+          "mase": 0.4200857130936114,
+          "coverage": 0.9690721649484536,
+          "mean_width": 321.1013086443299
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 14.688385169999998,
+          "mse": 362.08842267322126,
+          "rmse": 19.02862114482343,
+          "wape": 0.23777232165115336,
+          "agreement_pct": 76.22276783488466,
+          "smape": 0.24003088929626887,
+          "mase": 0.07531276704681313,
+          "coverage": 1.0,
+          "mean_width": 294.39986598
+        }
+      },
+      "project_qwen_tuned": {
+        "test": {
+          "n": 194.0,
+          "mae": 71.41704713917527,
+          "mse": 8114.623558284655,
+          "rmse": 90.08120535541615,
+          "wape": 0.23219217605161724,
+          "agreement_pct": 76.78078239483827,
+          "smape": 0.2631809830196203,
+          "mase": 0.39229414611531466,
+          "coverage": 0.9432989690721649,
+          "mean_width": 286.6267648247423
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 14.077964195,
+          "mse": 336.6460652951007,
+          "rmse": 18.347917192289174,
+          "wape": 0.2278909622824767,
+          "agreement_pct": 77.21090377175233,
+          "smape": 0.22946199083889496,
+          "mase": 0.07218291361782224,
+          "coverage": 1.0,
+          "mean_width": 251.35930777500002
+        }
+      },
+      "project_kg_ensemble": {
+        "test": {
+          "n": 194.0,
+          "mae": 70.40917313530927,
+          "mse": 7825.125191750325,
+          "rmse": 88.45973768755097,
+          "wape": 0.22891536095609183,
+          "agreement_pct": 77.10846390439082,
+          "smape": 0.2587051098421181,
+          "mase": 0.386757889891112,
+          "coverage": 0.9072164948453608,
+          "mean_width": 259.5286583928771
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 13.97753340125,
+          "mse": 329.08743769536915,
+          "rmse": 18.140767285188605,
+          "wape": 0.22626521086604615,
+          "agreement_pct": 77.37347891339539,
+          "smape": 0.22798990336315708,
+          "mase": 0.0716679679048334,
+          "coverage": 1.0,
+          "mean_width": 204.36260139839084
+        }
+      },
+      "last_value": {
+        "test": {
+          "n": 194.0,
+          "mae": 69.26804123711341,
+          "mse": 7701.432989690722,
+          "rmse": 87.75780871062541,
+          "wape": 0.22520529579353107,
+          "agreement_pct": 77.47947042064689,
+          "smape": 0.2504169149512649,
+          "mase": 0.3804896474820509,
+          "coverage": 0.6701030927835051,
+          "mean_width": 178.23433909728172
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 14.695,
+          "mse": 355.835,
+          "rmse": 18.863589266096735,
+          "wape": 0.2378794010522056,
+          "agreement_pct": 76.21205989477944,
+          "smape": 0.24745263042522453,
+          "mase": 0.07534668371941386,
+          "coverage": 0.92,
+          "mean_width": 63.37248226856328
+        }
+      },
+      "seasonal_naive": {
+        "test": {
+          "n": 194.0,
+          "mae": 250.340206185567,
+          "mse": 86203.60824742269,
+          "rmse": 293.60450992350695,
+          "wape": 0.8139098374392492,
+          "agreement_pct": 18.609016256075083,
+          "smape": 1.2796280794374824,
+          "mase": 1.3751198258381665,
+          "coverage": 0.8195876288659794,
+          "mean_width": 539.3712870687194
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 20.215,
+          "mse": 924.125,
+          "rmse": 30.399424336654796,
+          "wape": 0.3272359368676649,
+          "agreement_pct": 67.27640631323351,
+          "smape": 0.3261884848306971,
+          "mase": 0.10364975919618587,
+          "coverage": 0.8,
+          "mean_width": 80.27390990926905
+        }
+      },
+      "rolling_mean_4": {
+        "test": {
+          "n": 194.0,
+          "mae": 95.26417525773196,
+          "mse": 13369.673646907217,
+          "rmse": 115.6273049366248,
+          "wape": 0.3097243170772582,
+          "agreement_pct": 69.02756829227418,
+          "smape": 0.3377205987725548,
+          "mase": 0.5232865231081747,
+          "coverage": 0.6288659793814433,
+          "mean_width": 261.33846878889165
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 15.9675,
+          "mse": 428.55125,
+          "rmse": 20.701479415732585,
+          "wape": 0.2584783488466208,
+          "agreement_pct": 74.15216511533792,
+          "smape": 0.26104492025852755,
+          "mase": 0.08187126044843422,
+          "coverage": 0.96,
+          "mean_width": 75.6182087773823
+        }
+      },
+      "paper_subepidemic_second": {
+        "test": {
+          "n": 194.0,
+          "mae": 146.27284882505816,
+          "mse": 44392.35049422852,
+          "rmse": 210.69492280125908,
+          "wape": 0.47556448252155664,
+          "agreement_pct": 52.44355174784434,
+          "smape": 0.5471936575299096,
+          "mase": 0.8034773856983546,
+          "coverage": 0.6391752577319587,
+          "mean_width": 362.79763551300084
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 26.43480533757218,
+          "mse": 1036.047772064744,
+          "rmse": 32.18769597322468,
+          "wape": 0.42792076629012027,
+          "agreement_pct": 57.20792337098797,
+          "smape": 0.4968738359017227,
+          "mase": 0.13554099468896388,
+          "coverage": 0.67,
+          "mean_width": 81.84917890301058
+        }
+      },
+      "paper_subepidemic_ensemble_weighted": {
+        "test": {
+          "n": 194.0,
+          "mae": 135.41422657328613,
+          "mse": 25484.292383672906,
+          "rmse": 159.63800419597115,
+          "wape": 0.44026076680438264,
+          "agreement_pct": 55.973923319561735,
+          "smape": 0.7009313488380866,
+          "mase": 0.743830927116185,
+          "coverage": 0.6030927835051546,
+          "mean_width": 251.38422050444322
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 29.033298541626987,
+          "mse": 1186.8771657925668,
+          "rmse": 34.451083666447516,
+          "wape": 0.469984598002865,
+          "agreement_pct": 53.0015401997135,
+          "smape": 0.6486739164546731,
+          "mase": 0.1488644275295875,
+          "coverage": 0.62,
+          "mean_width": 62.77064921239811
+        }
+      },
+      "paper_subepidemic_ensemble_unweighted": {
+        "test": {
+          "n": 194.0,
+          "mae": 94.81096321515706,
+          "mse": 13350.694950070963,
+          "rmse": 115.5452073868534,
+          "wape": 0.30825082727904257,
+          "agreement_pct": 69.17491727209575,
+          "smape": 0.45693968810223806,
+          "mase": 0.520797027415296,
+          "coverage": 0.6030927835051546,
+          "mean_width": 206.09820564657733
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 19.547254811260856,
+          "mse": 596.5734663931329,
+          "rmse": 24.424853456942845,
+          "wape": 0.31642662583991676,
+          "agreement_pct": 68.35733741600832,
+          "smape": 0.3897981833419814,
+          "mase": 0.10022598338529178,
+          "coverage": 0.69,
+          "mean_width": 52.59271086700674
+        }
+      },
+      "paper_prophet": {
+        "test": {
+          "n": 194.0,
+          "mae": 109.32522233850713,
+          "mse": 19381.32717168266,
+          "rmse": 139.21683508714978,
+          "wape": 0.3554398044858452,
+          "agreement_pct": 64.45601955141548,
+          "smape": 0.43200654625509005,
+          "mase": 0.6005239150055238,
+          "coverage": 0.32989690721649484,
+          "mean_width": 131.3036449903144
+        },
+        "validation": {
+          "n": 200.0,
+          "mae": 17.919617414726787,
+          "mse": 466.33547183801033,
+          "rmse": 21.594801963389486,
+          "wape": 0.2900787926301382,
+          "agreement_pct": 70.99212073698618,
+          "smape": 0.3096176352698843,
+          "mase": 0.09188048626882069,
+          "coverage": 0.575,
+          "mean_width": 40.140452563445926
+        }
+      }
+    },
+    "by_horizon_wape": {
+      "paper_arima": {
+        "1": 0.1223818995513856,
+        "2": 0.18962449418096117,
+        "3": 0.24753474861626146,
+        "4": 0.3365916275518223
+      },
+      "paper_gam": {
+        "1": 1.046673558635457,
+        "2": 4.00659892079759,
+        "3": 10.18247794175798,
+        "4": 21.016708575139504
+      },
+      "paper_slr": {
+        "1": 0.22071627527253532,
+        "2": 0.3079467512576657,
+        "3": 0.40241820507015386,
+        "4": 0.4960756210756213
+      },
+      "paper_subepidemic_top": {
+        "1": 0.33765319473397387,
+        "2": 0.4162021852749959,
+        "3": 0.47967861735395007,
+        "4": 0.533923330658374
+      },
+      "project_kg_primary": {
+        "1": 0.14243044367406235,
+        "2": 0.23016660657921023,
+        "3": 0.28852212802046173,
+        "4": 0.3369156524706524
+      },
+      "project_qwen_tuned": {
+        "1": 0.13700270648441626,
+        "2": 0.21123871452353998,
+        "3": 0.25769363182338295,
+        "4": 0.32619520161070165
+      },
+      "project_kg_ensemble": {
+        "1": 0.13143065955163763,
+        "2": 0.2036444584137977,
+        "3": 0.25740767163626577,
+        "4": 0.32668298324460826
+      },
+      "last_value": {
+        "1": 0.11951928156365557,
+        "2": 0.19551175334620763,
+        "3": 0.25994480716160734,
+        "4": 0.3296478296478296
+      },
+      "seasonal_naive": {
+        "1": 0.8106180665610143,
+        "2": 0.812412599054405,
+        "3": 0.8148347580265195,
+        "4": 0.8179088179088179
+      },
+      "rolling_mean_4": {
+        "1": 0.21297213417855257,
+        "2": 0.2818305919957382,
+        "3": 0.34608265464091,
+        "4": 0.4014469014469014
+      },
+      "paper_subepidemic_second": {
+        "1": 0.3388678860498401,
+        "2": 0.43990694243310996,
+        "3": 0.5236026177390442,
+        "4": 0.6046867840196228
+      },
+      "paper_subepidemic_ensemble_weighted": {
+        "1": 0.33758341043963297,
+        "2": 0.4162023131515081,
+        "3": 0.4797531553750317,
+        "4": 0.5309987729672856
+      },
+      "paper_subepidemic_ensemble_unweighted": {
+        "1": 0.21790931681171027,
+        "2": 0.2821853109201914,
+        "3": 0.34261868526527683,
+        "4": 0.3934920522023749
+      },
+      "paper_prophet": {
+        "1": 0.22082304008741838,
+        "2": 0.3078215340862043,
+        "3": 0.4021497542546178,
+        "4": 0.4960178909536673
+      }
+    },
+    "skill_vs_paper_arima_test": {
+      "paper_gam": {
+        "mae_skill_pct": -3921.2131629339083,
+        "mse_skill_pct": -1081233.9936703572
+      },
+      "paper_slr": {
+        "mae_skill_pct": -59.38168235389622,
+        "mse_skill_pct": -160.38310391366218
+      },
+      "paper_subepidemic_top": {
+        "mae_skill_pct": -97.69009419244834,
+        "mse_skill_pct": -244.31902525212212
+      },
+      "project_kg_primary": {
+        "mae_skill_pct": -11.465800041911379,
+        "mse_skill_pct": -27.698855407262908
+      },
+      "project_qwen_tuned": {
+        "mae_skill_pct": -4.091568662221718,
+        "mse_skill_pct": -8.905279206386808
+      },
+      "project_kg_ensemble": {
+        "mae_skill_pct": -2.6225750496485496,
+        "mse_skill_pct": -5.019960286690827
+      },
+      "last_value": {
+        "mae_skill_pct": -0.9593557750931712,
+        "mse_skill_pct": -3.359903759829408
+      },
+      "seasonal_naive": {
+        "mae_skill_pct": -264.8751356283059,
+        "mse_skill_pct": -1056.9271152694216
+      },
+      "rolling_mean_4": {
+        "mae_skill_pct": -38.84916609007595,
+        "mse_skill_pct": -79.43260472362455
+      },
+      "paper_subepidemic_second": {
+        "mae_skill_pct": -113.1951809379744,
+        "mse_skill_pct": -495.783808143001
+      },
+      "paper_subepidemic_ensemble_weighted": {
+        "mae_skill_pct": -97.36855313726484,
+        "mse_skill_pct": -242.02128508938242
+      },
+      "paper_subepidemic_ensemble_unweighted": {
+        "mae_skill_pct": -38.18860178032092,
+        "mse_skill_pct": -79.17789416766594
+      },
+      "paper_prophet": {
+        "mae_skill_pct": -59.3433828954691,
+        "mse_skill_pct": -160.1142039260065
+      }
+    },
+    "relative_wape_improvement_vs_best_baseline_pct_test": {
+      "paper_arima": 0.9502395966455107,
+      "paper_gam": -3883.002003194189,
+      "paper_slr": -57.86717449836972,
+      "paper_subepidemic_top": -95.8115646387859,
+      "project_kg_primary": -10.406607873195426,
+      "project_qwen_tuned": -3.1024493600238237,
+      "project_kg_ensemble": -1.6474147064295304,
+      "last_value": 0.0,
+      "seasonal_naive": -261.4079476112517,
+      "rolling_mean_4": -37.529766334275934,
+      "paper_subepidemic_second": -111.16931591056176,
+      "paper_subepidemic_ensemble_weighted": -95.49307899402824,
+      "paper_subepidemic_ensemble_unweighted": -36.87547896815353,
+      "paper_prophet": -57.82923897656188
+    }
+  },
+  "paired_proof": {
+    "test_pairs": 194,
+    "validation_pairs": 200,
+    "predictions_csv_sha256": "5db0323fc612e225bebbd860522193484a1640ca28b28289524040c0492cfc05",
+    "paired_csv_sha256": "ba8c4ff45f6ddbaf348a53d9e514ce601953959fa30406300663480f5c9a01c6",
+    "metrics_csv_sha256": "e97eb53be77066357ad0ef4bed58f56113e4901119c785152cd392db9c2ee77e",
+    "determinism_identical": true,
+    "future_sentinel_pass": true
+  },
+  "evidence": {
+    "pdf_sha256": "589764fb45f9e40cb5cbbe5d7f554decdbb122f7960a94a33fce4dba468bfd7e",
+    "spans_sha256": "cedb73256faa4d6c147a0ef4424784da1d945fdd3d2a8171e2b0f3fd053b7de6",
+    "n_spans": 18
+  },
+  "governance_note_zh": "本区块为正式同行评审论文（RSOS 2024, JCR Q1/Q2）的方法迁移复现：同数据、同切分、同 horizon、同配对样本。SHADOW_ONLY：不发布、不晋级、不修改 Trusted 数据与 Active Pointer。本测试集已在评估中消费，结果仅属历史对比（METHOD_TRANSFER_REPLICATION），不得称为 Fresh held-out。",
+  "incomparability_factors": [
+    "疾病不同：论文为 mpox 单次暴发，本实验为新加坡登革热多年季节序列",
+    "周定义不同：论文周四-周三，本数据 ISO 周一-周日",
+    "论文 11 周校准窗在多年季节序列上偏短，对论文方法不利"
+  ],
+  "implementation_gaps": [
+    "ARIMA 选阶为确定性网格+AICc；与 pmdarima auto.arima 原生选阶一致率 9/100（KPSS 定 d 与 AICc 口径差异，已归因，见 autoarima_equivalence.json）",
+    "GAM 为 OLS B 样条+GCV，非 mgcv 原生（pygam 与 scipy 版本冲突，已卸载恢复，见 gam_equivalence.json）",
+    "sub-epidemic 为确定性 Python 实现，与官方 MATLAB 管线存在候选集/边界/优化器差异（Track 1 已量化归因）",
+    "bootstrap 区间为 N=100 残差 bootstrap+观测噪声项，替代论文 300 次参数 bootstrap"
+  ],
+  "fidelity_note_zh": "Track 1（论文官方 mpox 数据+官方预测产物）忠实度验证：SLR 逐点完全一致、论文报告数字精确复现；ARIMA 与 sub-epidemic 存在已归因的方法学差异；另发现官方 MATLAB 产物中 US(OWID)/US(CDC) 序列互换（D6）。",
+  "publication_state": "SHADOW_ONLY_NOT_PROMOTED"
+}
