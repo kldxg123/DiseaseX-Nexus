@@ -16,7 +16,7 @@
 
 ## 恢复
 
-先下载本仓库，再将同一 Release 的全部 `*-data-part-*.zip` 放进一个目录。在 Python 3.11 或更高版本运行：
+先下载本仓库，再将同一 Release 的全部 `.zip` 附件（包括 `server-db-part-*.zip`） 放进一个目录。在 Python 3.11 或更高版本运行：
 
 ```bash
 python restore_snapshot.py --assets /path/to/downloaded-assets --destination /path/to/new-workspace
